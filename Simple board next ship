@@ -1,0 +1,41 @@
+Contains: 1 alias and 1 trigger
+
+Description: An alias which, when used, boards the next ship automatically
+
+IMPORTANT: Before using, change the alias' "purse" to whatever money container you use
+
+Usage: boardnext
+
+-----------------------------------------------------------------
+Alias: boardnext
+
+Execute the following Javascript:
+
+//Change this if your money container is not a purse
+gwc.userdata.wallet = "purse"
+
+gwc.trigger.enable("board ship auto");
+gwc.output.append("Boarding next ship!","#15a395");
+
+-----------------------------------------------------------------
+
+Trigger: board ship auto
+
+Type: Regexp
+
+Pattern: Welcome to Genesis ShipLines|Last Call from Genesis ShipLines|All aboard|is thrown onto the
+
+Execute the following Javascript: 
+
+var wallet = gwc.userdata.wallet
+
+gwc.connection.send("open " + wallet);
+gwc.connection.send("get coins from " + wallet);
+gwc.connection.send("buy tickets for team");
+gwc.connection.send("put coins in " + wallet);
+gwc.connection.send("board ship");
+gwc.output.append("Ship boarded!","#15a395");
+gwc.trigger.disable('board ship auto');
+/*jshint ignore:start*/
+await wait("1.5");
+gwc.connection.send("close " + wallet);
