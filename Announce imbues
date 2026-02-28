@@ -1,0 +1,55 @@
+Contains: 1 trigger
+
+Description: Sends a message both in the client and in the comms window as well as plays a sound
+
+Usage: A trigger
+
+!!!!!!!! All credit to Exosphere for the code that plays sound !!!!!!!!
+-----------------------------------------------------------------------
+Trigger: Taking imbues highlight
+
+Type: regexp
+
+Pattern: ^You (?:take|get|pick|loot) (.*) (?:unusual|peculiar|exotic) (.*) from (.*) corpse
+
+Execute Javascript: 
+
+// Put your own audio link below, it has to link directly to an audio file.
+const audioLink = 'https://www.myinstants.com/media/sounds/12_3.mp3'
+
+
+gwc.connection.send("keep imbued item");
+//sends in log
+gwc.output.append("------------------------------------------");gwc.output.color("black","red")
+gwc.output.append("IMBUE SPOTTED!!! WE'RE EATING GOOD TONIGHT");gwc.output.color("black","red")
+gwc.output.append("------------------------------------------");gwc.output.color("black","red")
+//sends in chat
+document.getElementById('communication').append("------------------------------------------\n")
+document.getElementById('communication').append("IMBUE SPOTTED!!! WE'RE EATING GOOD TONIGHT\n")
+document.getElementById('communication').append("------------------------------------------\n")
+
+//plays a sound
+function playAndGetDuration(src) {
+    return new Promise(function(resolve) {
+        var audio = new Audio();
+        $(audio).on("loadedmetadata", function(){
+            resolve(audio.duration);
+        });
+        audio.src = src;
+        audio.volume = 0.5 // Adjust volume here, 1 is max
+		audio.play()
+    });
+}
+
+// Makes sure the audio isn't already playing
+if(gwc.userdata.isAudioPlaying != true){
+  
+playAndGetDuration(audioLink)
+.then(function(length) {
+    gwc.userdata.isAudioPlaying = true;
+    setTimeout(() => {
+      gwc.userdata.isAudioPlaying = false
+    },length * 1000
+               )
+});
+}
