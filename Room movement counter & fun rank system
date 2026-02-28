@@ -1,0 +1,160 @@
+Contains: 1 alias and 1 trigger
+
+Description: a fun little bit of code that tracks how many rooms you've moved in lifetime and daily. Also includes a rank system that automatically assigns ranks based on rooms moved
+
+IMPORTANT: When first installing, enter <walks> then reload the page
+
+Usage: <walks> <walks reset>
+
+-------------------------------------------------------------------------------------------
+
+Alias: walks
+
+Execute the following javascript
+
+//Movement tracker
+
+//nerd stuff
+const accentColor = "#e38b19"
+const normalColor = "#00a108"
+
+function out(text, color) {
+    gwc.output.append(text, color || normalColor)
+}
+
+function todayStamp() {
+    const d = new Date()
+    return d.toISOString().split("T")[0]
+}
+
+//Init
+let stored = localStorage.getItem("walkData")
+let walkData = stored ? JSON.parse(stored) : null
+
+if (!walkData) {
+    walkData = {
+        lifetime: 0,
+        daily: {
+            date: todayStamp(),
+            count: 0
+        },
+        records: {
+            mostInDay: 0,
+            mostInDayDate: null
+        }
+    }
+}
+//Ranks 
+const walkRanks = [
+    { name: "Wandering Soul", req: 100 },
+    { name: "Trail Seeker", req: 500 },
+    { name: "Seasoned Pathfinder", req: 2000 },
+    { name: "Great Adventurer", req: 5000 },
+    { name: "Heroic Traveler", req: 25000 },
+    { name: "Grand Voyager", req: 100000 },
+    { name: "Traveller of legend", req: 1000000},
+    { name: "Mythic Explorer of Continents", req: 10000000},
+    { name: "Greatest Traveller in all the lands", req: 100000000},
+    { name: "God of Explorers", req: 1000000000},
+]
+
+let total = walkData.lifetime
+let currentRank = null
+let nextRank = null
+
+for (let i = 0; i < walkRanks.length; i++) {
+
+    let rank = walkRanks[i]
+
+    if (total >= rank.req) {
+        currentRank = rank
+    } else {
+        nextRank = rank
+        break
+    }
+}
+//Reset Daily
+if (walkData.daily.date !== todayStamp()) {
+
+    if (walkData.daily.count > walkData.records.mostInDay) {
+        walkData.records.mostInDay = walkData.daily.count
+        walkData.records.mostInDayDate = walkData.daily.date
+    }
+
+    walkData.daily = {
+        date: todayStamp(),
+        count: 0
+    }
+}
+
+//Commands
+if (args[1] === "reset") {
+
+    walkData.lifetime = 0
+    walkData.daily.count = 0
+    walkData.records.mostInDay = 0
+    walkData.records.mostInDayDate = null
+
+    out("Walk data reset.", accentColor)
+}
+else if (args[1] === "daily"){
+     out("=== Movement Stats ===", accentColor)
+  out("Today: " + walkData.daily.count)
+}
+
+else {
+	out("-----Your Movemement Stats-----",accentColor)
+	out("Current Rank: " + (currentRank ? currentRank.name : "none") + "(" + walkData.lifetime + ")")
+	out("Next Rank: " + (nextRank ? nextRank.name : "none") + "(" + nextRank.req + ")" )
+    out("Lifetime: " + walkData.lifetime)
+    out("Most Rooms in a Day: " + walkData.records.mostInDay)
+
+    if (walkData.records.mostInDayDate) {
+        out("Record Date: " + walkData.records.mostInDayDate + " (" + walkData.records.mostInDay + ")")
+    }
+    out("-------------------------------",accentColor)
+
+}
+
+localStorage.setItem("walkData", JSON.stringify(walkData))
+save()
+
+-------------------------------------------------------------------------------------------
+
+Trigger: walks 
+
+Type: gmcp
+
+Pattern: room.info
+
+Execute the following Javascript:
+
+//nerdstuff
+let stored = JSON.parse(localStorage.getItem("walkData"))
+if (!stored) return
+
+function todayStamp() {
+    const d = new Date()
+    return d.toISOString().split("T")[0]
+}
+
+// Dailyflip
+if (stored.daily.date !== todayStamp()) {
+
+    stored.daily = {
+        date: todayStamp(),
+        count: 0
+    }
+}
+
+// Count movement
+stored.lifetime++
+stored.daily.count++
+
+if (stored.daily.count > stored.records.mostInDay) {
+    stored.records.mostInDay = stored.daily.count
+    stored.records.mostInDayDate = stored.daily.date
+}
+
+localStorage.setItem("walkData", JSON.stringify(stored))
+save()
