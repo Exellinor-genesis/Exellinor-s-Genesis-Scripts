@@ -1,0 +1,33 @@
+Description: This is a template anyone can easily use to highlight individual words in text
+
+-----------------------------------------------------------
+Trigger type: regexp
+
+Pattern: words to be highlighted separated by "|" e.g.
+|attacks you|You attack|unusual|exotic|
+
+Execute javascript:
+
+function colorizeLine(line, replacements) {
+  let newLine = line;
+
+  for (const [word, color] of Object.entries(replacements)) {
+    const wrapped = `<span style="color: ${color}">${word}</span>`;
+    newLine = newLine.replaceAll(word, wrapped);
+  }
+
+  return newLine;
+}
+//Be sure to put a comma after each line!
+//Tip: Google "color picker" to find hex codes
+const colorMap = {
+//'Word': 'hex color code',
+  'attacks you': '#fc0320',
+  'You attack': '#0352fc',
+  'unusual': '#fcba03',
+  'exotic': '#d70fff',
+};
+
+const matchLine = args['$*'];
+const newLine = colorizeLine(matchLine, colorMap);
+gwc.output.replace(matchLine, newLine);
