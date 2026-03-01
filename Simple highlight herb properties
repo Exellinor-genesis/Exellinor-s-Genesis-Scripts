@@ -1,0 +1,46 @@
+Contains: 1 trigger
+
+Description: A simple trigger that highlights properties of herbs (fatigue, dex, con, etc.) and their strengths (min,norm,maj) when exa'd in a Gont blue glass herb jar
+
+------------------------------------------------------------------------
+
+Trigger: Highlight herb properties
+
+Type: regexp
+
+Pattern: | mana     | maj  | fatigue  | min | health  | norm | con      | dex      | fire     | dis      | int      | magic    | wis      | str      | neg  |
+
+Execute Javascript:
+
+function colorizeLine(line, replacements) {
+  let newLine = line;
+
+  for (const [word, color] of Object.entries(replacements)) {
+    const wrapped = `<span style="color: ${color}">${word}</span>`;
+    newLine = newLine.replaceAll(word, wrapped);
+  }
+
+  return newLine;
+}
+
+const colorMap = {
+  ' mana     ': '#00C2FF',
+  ' maj  ': '#E63946',
+  ' fatigue  ': '#5C677D',
+  ' min ': '#A8DADC',
+  ' health  ': '#2DC653',
+  ' norm ': '#F4A261',
+  ' con      ': '#6B8E23',
+  ' dex      ': '#00B3A4',
+  ' fire     ': '#FF4500',
+  ' dis      ': '#2F3E46',
+  ' int      ': '#3A86FF',
+  ' magic    ': '#9D4EDD',
+  ' wis      ': '#C2A83E',
+  ' str      ': '#C1121F',
+  ' neg  ': '#660801',
+};
+
+const matchLine = args['$*'];
+const newLine = colorizeLine(matchLine, colorMap);
+gwc.output.replace(matchLine, newLine);
