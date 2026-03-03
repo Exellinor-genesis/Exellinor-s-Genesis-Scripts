@@ -1,0 +1,63 @@
+Contains: 1 trigger
+
+Description: A simple translator that tacks the numbers/total to each of your stats
+
+---------------------------------------------
+Trigger
+
+Type: regexp
+
+Pattern: ^You are (.*).
+
+Execute Javascript:
+
+//Stat replacer thing
+
+//All stat tiers in order
+const statTiers = [
+    //Constitution
+    ["sickly","fragile","frail","skinny","lean","healthy","firm","hearty","hardy","hale","robust","staunch","tough","sturdy","vigorous","epic constitution","immortal constitution","supreme constitution","extraordinary constitution","incredible constitution","unbelievable constitution","miraculous constitution","impossible constitution"],
+
+    //Dexterity
+    ["stiff","lumbering","clumsy","deft","flexible","nimble","lithe","supple","agile","swift","quick","graceful","athletic","gymnastic","acrobatic","epic dexterity","immortal dexterity","supreme dexterity","extraordinary dexterity","incredible dexterity","unbelievable dexterity","miraculous dexterity","impossible dexterity"],
+
+    //Discipline
+    ["gutless","frightened","spineless","fearful","cowardly","insecure","timid","sound","bold","brave","courageous","fearless","valiant","heroic","lionhearted","epic discipline","immortal discipline","supreme discipline","extraordinary discipline","incredible discipline","unbelievable discipline","miraculous discipline","impossible discipline"],
+
+    //Intelligence
+    ["moronic","dimwitted","simple","dense","slow","limited","keen","clever","quick minded","intelligent","sharp","bright","inventive","ingenious","brilliant","epic intelligence","immortal intelligence","supreme intelligence","extraordinary intelligence","incredible intelligence","unbelievable intelligence","miraculous intelligence","impossible intelligence"],
+
+    //Strength
+    ["puny","feeble","flimsy","weak","well built","muscular","hefty","strong","powerful","musclebound","ironlike","forceful","crushing","mighty","titanic","epic strength","immortal strength","supreme strength","extraordinary strength","incredible strength","unbelievable strength","miraculous strength","impossible strength"],
+
+    //Wisdom
+    ["inane","stupid","idiotic","foolish","uneducated","literate","educated","learned","scholarly","cultivated","knowledgeable","erudite","wise","sage","enlightened","epic wisdom","immortal wisdom","supreme wisdom","extraordinary wisdom","incredible wisdom","unbelievable wisdom","miraculous wisdom","impossible wisdom"]
+]
+
+//Build stat map
+let statMap = {}
+
+statTiers.forEach(group => {
+    group.forEach((word, index) => {
+        statMap[word] = "(" + (index + 1) + "/23)"
+    })
+})
+
+//Sort keys longest first
+let sortedKeys = Object.keys(statMap).sort((a, b) => b.length - a.length)
+
+let line = args[0]
+
+//Chuck dem numbers
+sortedKeys.forEach(key => {
+    if (line.includes(key)) {
+
+        let replacement = key + statMap[key]
+
+        gwc.output.replace(
+            key,
+            '<span style="font-weight:bold">' + replacement + '</span>',
+            true
+        )
+    }
+})
