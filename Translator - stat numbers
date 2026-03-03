@@ -1,9 +1,21 @@
-Contains: 1 trigger
+Contains: 1 trigger & 1 alias
 
-Description: A simple translator that tacks the numbers/total to each of your stats
+Description: A simple translator that tacks the numbers/total to each of your stats. The alias is so that it only fires when you type <stats>. Otherwise it also translated when comparing stats with someone
 
 ---------------------------------------------
-Trigger
+Alias: stats
+
+Execute javascript:
+var stattrigger = "Stat numbers"//change this to the name of your trigger
+gwc.trigger.enable(stattrigger)
+gwc.connection.send("stats")
+/*jshint ignore:start*/
+await wait (".25")
+gwc.trigger.disable(stattrigger)
+
+---------------------------------------------
+
+Trigger: Stats numbers
 
 Type: regexp
 
