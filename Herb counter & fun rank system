@@ -1,0 +1,127 @@
+Contains: 1 alias and 1 trigger
+
+Description: A fun script that counts how many herbs you've picked in all time and also daily then assigns you a rank.
+Enjoy!!
+(Credit for the local storage saving goes to Exosphere's github!)
+
+Usage: <herbs> | <herbs reset>
+
+IMPORTANT: when you first install it, enter <herbs> and reload the page
+
+-----------------------------------------------------------------------
+
+Trigger: Herb tracker
+
+Type: regexp
+
+Pattern: ^You find a (.*)
+
+Execute Javascript:
+
+let stored = JSON.parse(localStorage.getItem("herbTracker"))
+if (!stored) return
+
+stored.lifetimeTotal++
+stored.daily.total++
+
+localStorage.setItem("herbTracker", JSON.stringify(stored))
+
+-----------------------------------------------------------------------
+
+Alias: herbs
+
+Execute javascript:
+
+// HERB TRACKER
+// Usage: herbs | herbs reset
+
+const messageColor = "#C7F9CC"
+const rankColor  = "#e8a023"
+const borderColor  = "#9FE870"
+
+function out(text, color) {
+    gwc.output.append(text, color || messageColor)
+}
+
+function todayStamp() {
+    return new Date().toISOString().split("T")[0]
+}
+
+//Init Storage
+let stored = localStorage.getItem("herbTracker")
+let data = stored ? JSON.parse(stored) : null
+
+if (!data) {
+    data = {
+        lifetimeTotal: 0,
+        daily: {
+            date: todayStamp(),
+            total: 0
+        },
+        herbs: {}
+    }
+}
+// Auto daily reset
+if (data.daily.date !== todayStamp()) {
+    data.daily = {
+        date: todayStamp(),
+        total: 0
+    }
+}
+ //Ranks 
+  const walkRanks = [
+      { name: "Seedling", req: 0 },
+      { name: "Leaf Collector", req: 50 },
+      { name: "Bush Forager", req: 100 },
+      { name: "Root Tender", req: 250 },
+      { name: "Wildcrafter", req: 500 },
+      { name: "Greenhand", req: 750 },
+      { name: "Warden of Herbs", req: 1000 },
+      { name: "Verdant Adept", req: 1500},
+      { name: "Botanic Sage", req: 3000},
+      { name: "Master of the Verdant Arts", req: 5*1000},
+      { name: "Arch-Herbalist", req: 10*1000},
+      { name: "Grand Druid of Herbs", req: 25*1000},
+      { name: "Great Keeper of the First Seed", req: 50*1000},
+  ]
+  
+  let total = data.lifetimeTotal
+  let currentRank = null
+  let nextRank = null
+  
+  for (let i = 0; i < walkRanks.length; i++) {
+  
+      let rank = walkRanks[i]
+  
+      if (total >= rank.req) {
+          currentRank = rank
+      } else {
+          nextRank = rank
+          break
+      }
+  }
+//function to save to browser storage
+function save() {
+    localStorage.setItem("herbTracker", JSON.stringify(data))
+}
+
+let action = args[1]
+
+//RESET
+if (action === "reset") {
+
+    data.lifetimeTotal = 0
+    data.daily.total = 0
+
+    out("Herb tracker reset!", accentColor)
+}
+//TRACKER
+else {
+    out("-----------------------------",borderColor)
+    out("Current Rank: " + (currentRank ? currentRank.name : "none"),rankColor)
+    out("Next Rank: " + (nextRank ? nextRank.name : "none"))
+    out("Total Herbs Alltime: " + data.lifetimeTotal)
+    out("Total Herbs Today: " + data.daily.total)
+    out("-----------------------------",borderColor)
+}
+save()
