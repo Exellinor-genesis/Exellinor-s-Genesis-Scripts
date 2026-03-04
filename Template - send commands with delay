@@ -1,0 +1,33 @@
+Contains: script that can go in a trigger or alias
+
+Description: sends commands with a configurable delay between each
+
+Usage: simply list the commands to send under the const commands like in the example, then set it to go off on an alias or by a trigger
+
+-------------------------------------------------
+
+Execute Javascript:
+
+const delay = 300 // milliseconds between commands
+
+const commands = `
+grin
+say Hello!!
+flip
+ponder delays
+`
+.trim()
+.split("\n")
+
+
+let i = 0
+
+function sendNext() {
+    if (i >= commands.length) return
+
+    gwc.connection.send(commands[i])
+    i++
+    setTimeout(sendNext, delay)
+}
+
+sendNext()
