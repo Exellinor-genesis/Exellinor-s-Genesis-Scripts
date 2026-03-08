@@ -14,8 +14,23 @@ Execute the following Javascript:
 //Change this if your money container is not a purse
 gwc.userdata.wallet = "purse"
 
+
+if (gwc.userdata.boardingnext === "false"){
 gwc.trigger.enable("board ship auto");
 gwc.output.append("Boarding next ship!","#15a395");
+gwc.userdata.boardingnext = "true"
+}
+
+else if(gwc.userdata.boardingnext === "true"){
+gwc.trigger.disable("board ship auto");
+gwc.output.append("Ship boarding cancelled","#15a395");
+gwc.userdata.boardingnext = "false"
+}
+
+else if (!gwc.userdata.boardingnext){
+ gwc.userdata.boardingnext = "true"
+ gwc.output.append("Boarding next ship!","#15a395");
+}
 
 -----------------------------------------------------------------
 
@@ -36,6 +51,7 @@ gwc.connection.send("put coins in " + wallet);
 gwc.connection.send("board ship");
 gwc.output.append("Ship boarded!","#15a395");
 gwc.trigger.disable('board ship auto');
+gwc.userdata.boardingnext = "false";
 /*jshint ignore:start*/
 await wait("1.5");
 gwc.connection.send("close " + wallet);
