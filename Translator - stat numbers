@@ -6,12 +6,21 @@ Description: A simple translator that tacks the numbers/total to each of your st
 Alias: stats
 
 Execute javascript:
-var stattrigger = "Stat numbers"//change this to the name of your trigger
-gwc.trigger.enable(stattrigger)
-gwc.connection.send("stats")
-/*jshint ignore:start*/
-await wait (".25")
-gwc.trigger.disable(stattrigger)
+var stattrigger = "Stat numbers"; // change this to the name of your trigger
+
+if (args[1] === "reset"){
+    gwc.connection.send("stats reset");
+}
+else{
+    gwc.trigger.enable(stattrigger);
+    gwc.trigger.enable("progress converter");
+    gwc.connection.send("stats");
+
+    setTimeout(function () {
+        gwc.trigger.disable(stattrigger);
+        gwc.trigger.disable("progress converter");
+    }, 250);
+}
 
 ---------------------------------------------
 
