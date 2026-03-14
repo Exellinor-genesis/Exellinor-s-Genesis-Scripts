@@ -1,0 +1,71 @@
+Description: sticks numbers onto the end of your <skills> (e.g. superior craftsman [60] , expert layman [27])
+
+Contains: 1 alias and one trigger. Can be used without the alias, but the alias just prevents it from firing when you're not checking skills (like when you type <learn> or if someone said "master" etc.)
+
+-------------------------------------------------------
+Alias: skills
+
+var triggername = "skills translator" //change to whatever your trigger name is
+gwc.trigger.enable(triggername)
+
+if(!args["*"]){
+gwc.connection.send("skills")
+}
+
+else{
+gwc.connection.send("skills " + args["*"])
+}
+
+/*jshint ignore:start*/
+await wait (".5") //set this to a higher value if the trigger doesn't work
+gwc.trigger.disable(triggername)
+
+-------------------------------------------------------
+
+Trigger: skills translator
+
+regexp pattern: \b(novice|junior|apprentice|confident|seasoned|expert|eminent|brilliant|superior|student|amateur|layman|acolyte|journeyman|craftsman|professional|veteran|master|guru)\b
+
+Execute Javascript:
+
+//Be's sure to keep html sound(credit to Exosphere for this bit!!!)
+function replaceOutsideTags(str, regex, replacer) {
+  return str
+    .split(/(<[^>]+>)/g)
+    .map(part => part.startsWith('<') ? part : part.replace(regex, replacer))
+    .join('');
+}
+
+//Skill level lists
+const mainLevels = [
+  "student","amateur","layman","acolyte","journeyman",
+  "craftsman","professional","veteran","master","guru"
+];
+
+const subLevels = [
+  "novice","junior","apprentice","",
+  "confident","seasoned","expert","eminent","brilliant","superior"
+];
+
+//Get last line(safeguard)
+let line = $("#mudoutput .line").last().html();
+
+//Applies sub levels
+let skillRegex = /\b(novice|junior|apprentice|confident|seasoned|expert|eminent|brilliant|superior)?\s*(student|amateur|layman|acolyte|journeyman|craftsman|professional|veteran|master|guru)\b/g;
+
+line = replaceOutsideTags(line, skillRegex, function(match, sub, main){
+
+  //Find skill levels
+  let mainIndex = mainLevels.indexOf(main);
+  let subIndex = subLevels.indexOf(sub || "");
+
+  if (mainIndex === -1 || subIndex === -1) return match;
+
+  //Calculate 1–100 skill value
+  let value = mainIndex * 10 + subIndex + 1;
+
+  return match + " [" + value + "]";
+});
+
+//Apply replacements
+$("#mudoutput .line").last().html(line);
