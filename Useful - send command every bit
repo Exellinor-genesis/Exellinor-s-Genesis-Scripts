@@ -11,8 +11,7 @@ Execute the following javascript
 
 //The command to be sent
 var idlecommand = "v age"
-//Delay between sending commands
-//First number is minutes between commands
+//                 V minutes between commands
 var idleinterval = 5 * 60 * 1000
 
 
