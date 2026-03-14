@@ -53,3 +53,15 @@ playAndGetDuration(audioLink)
                )
 });
 }
+
+//remove all previous stuff if you don't want the sound at all
+
+gwc.connection.send("keep imbued item");
+//sends in log
+gwc.output.append("------------------------------------------");gwc.output.color("black","red")
+gwc.output.append("IMBUE SPOTTED!!! WE'RE EATING GOOD TONIGHT");gwc.output.color("black","red")
+gwc.output.append("------------------------------------------");gwc.output.color("black","red")
+//sends in chat
+document.getElementById('communication').append("------------------------------------------\n")
+document.getElementById('communication').append("IMBUE SPOTTED!!! WE'RE EATING GOOD TONIGHT\n")
+document.getElementById('communication').append("------------------------------------------\n")
