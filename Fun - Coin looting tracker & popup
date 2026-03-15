@@ -1,0 +1,185 @@
+Description: Counts how many coins of each type you loot from corpses, and summons a cool temporary popup!
+
+Usage: <coinloot> | <coinloot reset>
+
+===================================================================================================
+
+Alias: coinloot
+
+Execute Javascript:
+
+function out(text, color){
+  gwc.output.append(text + "\n", color);
+}
+
+// Initialize storage
+if (!gwc.userdata.coincounter) {
+  gwc.userdata.coincounter = {
+    platinum: 0,
+    gold: 0,
+    silver: 0,
+    copper: 0
+  };
+}
+
+var s = gwc.userdata.coincounter;
+
+// Reset command
+if (args[1] === "reset") {
+  for (let k in s) s[k] = 0;
+  out("Coin counter reset.", "#ff7777");
+  return;
+}
+
+// Colors for each metal
+const colors = {
+  platinum: "#e5e4e2",
+  gold: "#ffd700",
+  silver: "#c0c0c0",
+  copper: "#b87333"
+};
+
+out("══════════════ COIN LOOT ══════════════", "#66ccff");
+
+let total = 0;
+
+for (let metal of ["platinum","gold","silver","copper"]) {
+
+  let amount = s[metal];
+
+  if (amount > 0) {
+    let label = metal.charAt(0).toUpperCase() + metal.slice(1);
+    out(label.padEnd(10) + ": " + amount, colors[metal]);
+    total += amount;
+  }
+
+}
+
+if (total === 0) {
+  out("No coins looted yet.", "#aaaaaa");
+}
+
+out("──────────────────────────────────────", "#666666");
+out("Total coins looted: " + total, "#66ff99");
+out("══════════════════════════════════════", "#66ccff");
+
+===================================================================================================
+Trigger: coin tracker
+
+regexp trigger: You (?:get|take) (.*) (copper|silver|gold|platinum) (coin|coins) from (?:.*) corpse
+
+Execute Javascript: 
+
+//Init storage
+if (!gwc.userdata.coincounter) {
+  gwc.userdata.coincounter = {
+    copper: 0,
+    silver: 0,
+    gold: 0,
+    platinum: 0
+  };
+}
+
+var storage = gwc.userdata.coincounter;
+
+//Convert text to number
+function textToNumber(text) {
+  text = text.toLowerCase().trim();
+  if (text === "a" || text === "the") return 1;
+
+  const ones = {
+    zero:0, one:1, two:2, three:3, four:4,
+    five:5, six:6, seven:7, eight:8, nine:9,
+    ten:10, eleven:11, twelve:12, thirteen:13,
+    fourteen:14, fifteen:15, sixteen:16,
+    seventeen:17, eighteen:18, nineteen:19
+  };
+
+  const tens = {
+    twenty:20, thirty:30, forty:40,
+    fifty:50, sixty:60, seventy:70,
+    eighty:80, ninety:90
+  };
+
+  let total = 0;
+  let words = text.split(/\s+/);
+  for (let w of words) {
+    if (ones[w] !== undefined) total += ones[w];
+    else if (tens[w] !== undefined) total += tens[w];
+  }
+  return total;
+}
+
+//Get amount and type
+
+let amount = textToNumber(args[1]);
+let metal = args[2].toLowerCase();
+
+//Update amounts
+if (storage[metal] !== undefined) {
+  storage[metal] += amount;
+}
+
+//Popup - delete everything past here if you only want the counter
+const coinColours = {
+  copper: "#b87333",
+  silver: "#c0c0c0",
+  gold: "#ffd700",
+  platinum: "#e5e4e2"
+};
+
+const colour = coinColours[metal] || "#ffffff";
+const total = storage[metal]; // total after adding
+const text = "+" + amount + " " + metal + " (total: " + total + ")";
+
+//safety margins
+const marginX = 150;
+const marginY = 80;
+let left = marginX + Math.random() * (window.innerWidth - marginX * 2);
+let top = marginY + Math.random() * (window.innerHeight - marginY * 2);
+
+//Create element
+let popup = $("<div class='coinPopup'>" + text + "</div>");
+
+//Style
+popup.css({
+  position: "fixed",
+  left: left + "px",
+  top: top + "px",
+  color: colour,
+  fontWeight: "bold",
+  fontSize: "20px",
+  pointerEvents: "none",
+  textShadow: "0 0 6px " + colour + ", 0 0 10px " + colour,
+  transform: "scale(1)",
+  opacity: 1,
+  zIndex: 9999
+});
+
+//Add to page
+$("body").append(popup);
+
+//Random drift
+let driftX = (Math.random() - 0.5) * 60;
+let driftY = -40 - Math.random() * 40;
+
+//Animate float + fade
+popup.animate(
+  {
+    top: "+=" + driftY,
+    left: "+=" + driftX,
+    opacity: 0
+  },
+  {
+    duration: 3000,
+    step: function(now, fx) {
+      if (fx.prop === "opacity") {
+        let scale = 0.6 + now * 0.4;
+        popup.css("transform", "scale(" + scale + ")");
+      }
+    },
+    complete: function() {
+      popup.remove();
+    }
+  }
+);
