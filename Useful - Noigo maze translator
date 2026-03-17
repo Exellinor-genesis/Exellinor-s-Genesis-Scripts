@@ -1,0 +1,69 @@
+Description: Very useful for solving Noigo's maze - makes that in each room, you can simply type whatever you map the alias to and instantly get a 1-27 number instead of having to cross reference what things you have written down.
+
+Contains: 1 trigger and 1 alias
+
+Tips: Noigo's maze basically works like a bunch of interlinked teleporters. Each room's 4 exits teleports you to a random room, and often that room won't have an exit back to where you came from. However, the rooms' exits will remain the same, so it's predictable once mapped out. The only exception are the two rooms that lead out of the maze(one to the south back to Cadu, the other is east to the forest northeast of Cadu. Rooms can also link back to themselves through one exit, so it can get very confusing. I recommend getting a piece of graphing paper and writing the numbers 1-27 with a 3*3 grid around each number, then check which room you're in and go in an unexplored direction, write the number of the room you're in now, and go a new unexplored direction. The best way to find the "middle" of the maze is to try to discover all 27 rooms. For me it was the very last room I discovered that Noigo was in. Have fun!!
+
+Warning: This quest is very fun to figure out on your own, so only use this if you don't want to stress your brain too hard!
+
+----------------------------------------------------------------
+
+Alias: mazecheck(or whatever you want to make it)
+
+Execute Javascript:
+
+if(!args["*"]){
+gwc.connection.send("exa trees")
+gwc.connection.send("exa flowers")
+gwc.connection.send("exa bushes")
+gwc.connection.send("mc l",true)
+}
+/*jshint ignore:start*/
+await wait(.5)
+if (args[1] == "l"){
+var m = gwc.userdata.maze
+  
+var combo = m.trees + m.flowers + m.bushes;
+
+// convert A/B/C to numbers
+var letnums = {A:0, B:1, C:2};
+
+var number =
+  letnums[m.trees] * 9 +
+  letnums[m.flowers] * 3 +
+  letnums[m.bushes] + 1;
+
+gwc.output.append(combo + " = " + number, "#21cfa6")
+}
+
+--------------------------------------------------------------
+Trigger: Noigo maze
+
+Regexp pattern: The trees here are (.*)|They are (.*)|This is a (.*)|It's a few (.*)
+
+Execute Javascript:
+
+// initialize storage if needed
+if (!gwc.userdata.maze) {
+  gwc.userdata.maze = {
+    trees: "",
+    flowers: "",
+    bushes: ""
+  };
+}
+
+
+// trees
+if (args[1] == "old heavy oaks."){gwc.userdata.maze.trees = "A"}
+if (args[1] == "leafy birches.") {gwc.userdata.maze.trees = "B"}
+if (args[1] == "high pines.") {gwc.userdata.maze.trees = "C"}
+
+// flowers
+if (args[4] == "lonely lilies.") {gwc.userdata.maze.flowers = "A"}
+if (args[2] == "white roses, with an adorable smell.") {gwc.userdata.maze.flowers = "B"}
+if (args[2] == "anemones.") {gwc.userdata.maze.flowers = "C"}
+
+// bushes
+if (args[3] == "dark green bush.") {gwc.userdata.maze.bushes = "A"}
+if (args[3] == "green bush.") {gwc.userdata.maze.bushes = "B"}
+if (args[3] == "light green bush.") { gwc.userdata.maze.bushes = "C"}
