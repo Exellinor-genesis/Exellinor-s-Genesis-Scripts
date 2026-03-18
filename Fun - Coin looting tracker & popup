@@ -9,7 +9,7 @@ Alias: coinloot
 Execute Javascript:
 
 function out(text, color){
-  gwc.output.append(text + "\n", color);
+  gwc.output.append(text, color);
 }
 
 // Initialize storage
