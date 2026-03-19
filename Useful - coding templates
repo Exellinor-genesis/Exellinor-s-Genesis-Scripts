@@ -1,6 +1,14 @@
 Description: Some useful bits of code that I use in many of my triggers/aliases which just make it easier to code and nicer to keep track of!
-Tip: For help finding nice colors, google "color picker"!
-If you have any questions or need help figuring anything out or want to report a problem, please feel free to talk to me on discord or send Exellinor an in-game mail!
+
+Tips:
+> For help finding nice colors, google "color picker"!
+> Some of these functions share the same name (like comms and replace). The last one defined will override the others, so be careful with ordering or rename them if needed!
+> Colors depend on your browser supporting HTML. If something doesn’t show color, that’s probably why :<
+> You can mix functions together! Example: print(color("Hello!","green")) or replace("gold", color("GOLD!!","yellow"))
+> Keep your code organized!! It helps SO much once your code pile starts getting bigger
+> If you’re making a lot of code, consider keeping helpful functions like this in one file so you can reuse them easily across characters or setups!
+> Don’t be afraid to tweak stuff—half the fun is making it feel like your client :3
+> If you have any questions or need help figuring anything out or want to report a problem, please feel free to talk to me on discord or send Exellinor an in-game mail!
 
  > -----GWC functions----->>
 
