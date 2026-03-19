@@ -1,0 +1,126 @@
+Description: Some useful bits of code that I use in many of my triggers/aliases which just make it easier to code and nicer to keep track of!
+Tip: For help finding nice colors, google "color picker"!
+If you have any questions or need help figuring anything out or want to report a problem, please feel free to talk to me on discord or send Exellinor an in-game mail!
+
+ > -----GWC functions----->>
+
+ ---append--<
+ //Appends a line of colored(optional) text to your normal output window!
+ //Usage: print(message, color)
+ //Example: print("This is an example!","green")
+ //More examples:
+ print("Hello world!");
+ print("Warning! Low health!","red");
+ print("You gained 500 gold!","gold");
+ //Explanation:
+ //This prints text to your main output window. If you include a color, it colors the text. If not, it uses default color.
+ function print(message , color){
+ gwc.output.append(message,color);
+ }
+
+ ---append to comm window--<
+ function comms(message){
+ document.getElementById('communication').append(message)
+ }
+ //Examples:
+ comms("Hello from the comms window!");
+ comms("Incoming message...");
+ //Explanation:
+ //This sends plain text to the communication window instead of the main output.
+
+ ---append to comm window with color---<
+ function comms(message, color) {
+ document.getElementById('communication')
+ .insertAdjacentHTML('beforeend', `<span style="color:${color};">${message}</span><br>`);
+ }
+ //Examples:
+ comms("Hello from the comms window but fancy!","cyan");
+ comms("Danger incoming!","red");
+ //Explanation:
+ //Same as above, but lets you color the message using HTML styling!
+
+ ---replace text---<
+ function replace(original , newtext){
+ gwc.output.replace(original , newtext);
+ }
+ //Examples:
+ replace("old text","new text");
+ replace("You are hungry","You are STARVING");
+ //Explanation:
+ //Finds text in the output and replaces it with something else
+
+ ---replace text with color---<
+ function replace(original, newtext, color) {
+ let colored = `<span style="color:${color};">${newtext}</span>`;
+ gwc.output.replace(original, colored);
+ }
+ //Examples:
+ replace("Your boyfriend looks at you funny","Your boyfriend thinks you're ugly and wants to break up :(","red");
+ replace("gold","HOLY MOLY WE'RE RICH! GOLD!!","yellow");
+ //Explanation:
+ //Replaces text AND colors the replacement.
+
+ ---replace original text with colored text---<
+ function replace(original, color) {
+ let colored = `<span style="color:${color};">${original}</span>`;
+ gwc.output.replace(original, colored);
+ }
+ //Examples:
+ replace("dragon","purple");
+ replace("danger","red");
+ //Explanation:
+ //Keeps the same text, but just adds color to it.
+
+---send command---<
+function send(command){
+gwc.connection.send(command)
+}
+//Examples:
+send("look");
+send("say Hello there!");
+//Explanation:
+//Sends a command to the game
+
+ ---send multiple commands with one line---<
+ //Delay is optional, if left out, all commands will be sent at once!
+ //usage: sendMulti(delay, command1, command2);
+ //example: sendMulti(500, "say Erikaaa! What are you doing here with a child sized coffin!?","gasp","say You did doggy-doggy-WHAT-NOW??");
+ function sendMulti(...args) {
+ let delay = typeof args[0] === "number" ? args.shift() : 0;
+
+ args.forEach((cmd, i) => {
+ if (cmd && cmd.trim()) {
+ setTimeout(() => {
+ gwc.connection.send(cmd.trim());
+ }, i * delay);
+ }
+ });
+ }
+ //Examples:
+ //example: sendMulti(500, "say Erikaaa! What are you doing here with a child sized coffin!?" , "gasp" , "say You did doggy-doggy-WHAT-NOW??");
+ //Explanation:
+ //Lets you send multiple commands at once. If you include a number first, it delays each command!
+
+ > -----Other functions----->>
+
+ --html print with color--<
+ function color(text, color) {
+ return `<span style="color:${color};">${text}</span>`;
+ }
+ //Examples:
+ print(color("This is blue text","blue"));
+ print(color("SUPER IMPORTANT","red"));
+ //Explanation:
+ //Wraps text in color so you can reuse it anywhere.
+
+ --Add commas to long numbers--<
+ //Example of use is if you have a gwc.userdata etc. that is a large number, you just do formatNumber(gwc.userdata.example) in whatever you're appending or replacing etc.
+ function formatNumber(num) {
+ if (num == null) return "0";
+ return Number(num).toLocaleString();
+ }
+ //Examples:
+ gwc.output.append(formatNumber(1000));
+ gwc.output.append(formatNumber(gwc.userdata.alltimeKills));
+ //Explanation:
+ //Formats numbers like 1000 → 1,000 to make them easier to read
