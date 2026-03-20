@@ -144,6 +144,7 @@ gwc.output.append(caps(args[1]));
 //Transforms whatever letters you plug into it into either uppercase or lowercase respectively
 
 --Glowing popup generator!--<
+
 //Creates a glowing popup of whatever text you plug in!
 //Usage: coolPopup(text, color, total popup time in milliseconds)
 //Example: coolPopup("+" + args[1] + " coins!" , "gold" , 3000)
@@ -206,3 +207,44 @@ function coolPopup(text,colour,time){
     }
   )
 }
+
+--Convert percentage to bar--<
+//Converts a number you plug in to a very cool looking progress bar!
+//Usage: makeBar(percentage)
+//Example: makeBar(78) //Output: [████████████████----] 78%
+//Example 2: makeBar(gwc.userdata.rankprogress.percentage) //Output: [████----------------] 20%
+//I used this in a custom status tracker thing, it can be very cool:
+//>---Exellinor---<
+//Level: heroine
+//Progress to titan: [████----------------] 20%
+//Code:
+  function makeBar(percent, length = 20) {
+    percent = Math.max(0, Math.min(100, percent)); // clamp
+    
+    let filled = Math.round((percent / 100) * length);
+    let empty = length - filled;
+  
+    let bar = "█".repeat(filled) + "-".repeat(empty);
+  
+    return `[${bar}] ${percent}%`;
+  }
+--Convert percentage to bar(html version)--<
+//Same as previous one, but colored for html!
+//Code:
+  function makeCoolBar(percent, length = 20) {
+    percent = Math.max(0, Math.min(100, percent));
+    
+    let filled = Math.round((percent / 100) * length);
+    let empty = length - filled;
+  
+    let bar = "";
+  
+    for (let i = 0; i < filled; i++) {
+      bar += `<span style="color:#22c55e;">█</span>`; // green
+    }
+    for (let i = 0; i < empty; i++) {
+      bar += `<span style="color:#374151;">-</span>`; // gray
+    }
+  
+    return `[${bar}] ${percent}%`;
+  }
