@@ -69,7 +69,6 @@ Regexp pattern:
 (^You (?:killed|defeated) the (?:.*))|^(You find (?:.*)[!])|(?:You (?:get|take) (.*) (copper|silver|gold|platinum) (?:coin|coins) from (?:.*) corpse)|(?:Total value: (?:(.*) platinum))|(?:You (?:take|get|pick) (?:.*) (unusual|peculiar|exotic) (?:.*) from (?:.*) corpse)|(?:^You are (just beginning on the path to|very far from|a long distance from|a fair distance from|just under halfway to|just over halfway to|getting closer to|fairly close to|very close to|on the verge of) (?:.*) (novice|greenhorne|beginner|apprentice|wanderer|adventurer|adept|great adventurer|veteran|expert|rising hero|hero|titan|champion|legend|myth)[.])|(^You finally recover)
 
 Execute Javascript:
-
 //Things for user to mess with
 var timezone = "America/Chicago" //timezone list is provided in the github!
 
@@ -85,54 +84,21 @@ let rankt = a(8)
 let recovered = a(9)
 
 let trax = gwc.userdata.trax;
-
-// create if missing
-if (!trax) {
-  trax = {
-    killz: { 
-      today: 0, 
-      alltime: 0 },
-    herbs: { 
-      today: 0, 
-      alltime: 0 },
-    imbues: {
-      alltime: 0,
-      session: 0,
-      unusual: 0,
-      peculiar: 0,
-      exotic: 0
-    },
-    coinloot: {
-      total: 0,
-      platinum: 0,
-      gold: 0,
-      silver: 0,
-      copper: 0
-    },
-    nextlevel: {
-      percent: "unknown",
-      rank: "unknown"
-    },
-    walks: { alltime: 0 },
-    bankacc: 0,
-    currentdate: "unknown"
-  };
-}
-
-gwc.userdata.trax = trax;
-
-trax = gwc.userdata.trax;
 //Ensure stored date
 if (!trax.currentdate || trax.currentdate === "unknown") {
   storeCurrentDate();
 }
 
 //Reset daily
-if(recovered && isNewDay()){
+if(recovered){
+  out("Trax initialized")
+  if(isNewDay()){
+out("It's a new day so daily storages have been flipped!")
 trax.killz.today = 0
 trax.imbues.session = 0
 trax.herbs.today = 0
 storeCurrentDate()
+  }
 }
 
 //Add to kills
@@ -250,7 +216,6 @@ function addCoin(type, amount) {
     }
     return total;
   }
-
 ---------------------------------------------------------------------
 
 Trigger 2 - Room tracking
@@ -293,7 +258,12 @@ const c = {
   walk : ["#8f4b17" , "#b05d1e"],
   imbues : ["#78199e", "#af40db"],
 }
-
+//Valid commands
+const validCommands = [
+  "help","all","tab","herbs","walks","kills",
+  "imbues","progress","hunt","coins","bank",
+  "check","reset","save","restore", "init"
+]
 //=================
 //THINGS TO OUTPUT
 //=================
@@ -321,6 +291,7 @@ Show trackers:
        
 Data storage:
   Trax:
+       init      - initialize storage
        check     - dumps all userdata storage
        reset     - wipes all storage
        save      - save userdata to local storage
@@ -329,7 +300,6 @@ Data storage:
 `
     )
 }
-
 // TOGGLE TAB
 if(a(1, "tab")){
 // Tab status
@@ -337,13 +307,13 @@ if(a(1, "tab")){
   out("Trax tab is currently " + trax.tabstatus)
   }
 // Tab on
-  if(a(2, "on")){
+else if(a(2, "on")){
   out("Trax tab enabled. Move or <v> to resummon it!")
   gwc.trigger.enable(triggername)
   gwc.userdata.trax.tabstatus = "on"
   }
-  // Tab off
-if(a(2, "off")){
+// Tab off
+else if(a(2, "off")){
  out("Trax tab has been disabled!")
   gwc.trigger.disable(triggername)
   gwc.userdata.trax.tabstatus = "off"
@@ -354,7 +324,7 @@ if(a(2, "off")){
 
 
 // SHOW ALL
-if(a(1, "all")){
+else if(a(1, "all")){
   newsec()
   
 out("                 Adventuring", "#55e8ec")
@@ -373,83 +343,81 @@ killz()
   hunting()
   endsec()
 }
-
 //SHOW HERBS
-if(a(1, "herbs")){
+else if(a(1, "herbs")){
   newsec()
   out("                  Herbs",c.herbs[1])
   herbs()
   endsec()
 }
 //SHOW WALKS
-if(a(1, "walks")){
+else if(a(1, "walks")){
  newsec()
-
 out("                Walking",c.walk[0])
   walks()
   endsec()
 }
 //SHOW KILLS
-if(a(1, "kills")){
+else if(a(1, "kills")){
   newsec()
   out("                  Kills",c.combat[1])
  killz() 
   endsec()
 }
 //HUNTING INFO
-if(a(1, "hunt")){
+else if(a(1, "hunt")){
   newsec()
   out("              Hunting info",c.combat[1])
  hunting() 
   endsec()
 }
 //MORTAL PROGRESS
-if(a(1, "progress")){
+else if(a(1, "progress")){
 newsec()
 out("             Mortal Progress", c.walk[1])
 mimprove()
 endsec()
 }
 //IMBUES
-if(a(1, "imbues")){
+else if(a(1, "imbues")){
    newsec()
 out("           Gathered Imbuements")
   imbues()
   endsec()
    }
 //WORLDLY
-if(a(1, "coins")){
+else if(a(1, "coins")){
   newsec() 
   out("            Coins Collected")
   coins()
   endsec()
 }
 //BANK
-if(a(1, "bank")){
+else if(a(1, "bank")){
   newsec()
   bank()
   endsec()
 }
 //CHECK USERDATA
-if(a(1, "check")){
+else if(a(1, "check")){
    gwc.output.append(JSON.stringify(gwc.userdata.trax, function(key, value) {
     if (typeof value === 'function') return value.toString();
     return value;
 }, 2));
    }
 //SAVE DATA
-if(a(1, "save")){
+else if(a(1, "save")){
   backupTrax()
 }
 //RESTORE DATA
-if(a(1, "restore")){
+else if(a(1, "restore")){
   loadTrax()
 }
 //RESET
-if(a(1, "reset")){
+else if(a(1, "reset")){
   out("Are you sure you want to reset all tracked data? This wipes browser storage too! <trax reset confirm> to continue")
 }
-if(args[1]=="reset" && args[2] == "confirm"){
+else if(args[1]=="reset" && args[2] == "confirm"){
       gwc.userdata.trax = {
       killz: { 
         today: 0, 
@@ -479,13 +447,55 @@ if(args[1]=="reset" && args[2] == "confirm"){
       bankacc: 0,
       currentdate: "unknown"
     };
-   localStorage.setItem("traxBackup", JSON.stringify(""));
+localStorage.removeItem("traxBackup");
 }
-else if(!args[1] || args[1] != tab||walks||kills||bank||reset||coins||hunt||progress||herbs||imbues||help||save||restore||reset){
+else if(a(1, "init")){
+        if(!gwc.userdata.trax){
+      out("Trax storage initialized!")
+
+      gwc.userdata.trax = {
+      killz: { 
+        today: 0, 
+        alltime: 0 },
+      herbs: { 
+        today: 0, 
+        alltime: 0 },
+      imbues: {
+        alltime: 0,
+        session: 0,
+        unusual: 0,
+        peculiar: 0,
+        exotic: 0
+      },
+      coinloot: {
+        total: 0,
+        platinum: 0,
+        gold: 0,
+        silver: 0,
+        copper: 0
+      },
+      nextlevel: {
+        percent: "unknown",
+        rank: "unknown"
+      },
+      walks: { alltime: 0 },
+      bankacc: 0,
+      currentdate: "unknown"
+    }
+        }
+  else if(gwc.userdata.trax){
+    out("Trax storage is already initialized. At least I think so, <trax check> to be sure!")
+  }
+        }
+else if(!args["*"]){
   out(
 `Enter <trax tab on> to enable companion tab.
 For help on all commands, enter <trax help>`)
 }
+else if (args[1] && !validCommands.includes(args[1])) {
+  out(`Unidentified syntax, <trax help> for usage information`);
+}
+  
 //Easily access display data
 
 //Herbs
@@ -496,7 +506,7 @@ if(trax.herbs.alltime != 0){
 if(trax.herbs.today != 0){
   cout("Herbs found today: ", c.herbs[0],fn(trax.herbs.today),c.herbs[1])
 }
-else if(trax.herbs.today == 0){
+else{
     out("No herbs found today :(",c.herbs[0])
   }
 }
