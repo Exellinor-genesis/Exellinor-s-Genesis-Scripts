@@ -23,7 +23,36 @@ Tips:
  gwc.output.append(message,color);
  }
 
- ---append to comm window--<
+ ---append with multiple colors--<
+ //gwc.output.append normally doesn't work with multiple colors, but this code lets you do it, pretty much just outputting with html!
+ //Usage: cout(text1, color1, text2, color2, text3, color3...); //Can put as many text and colors as you want
+ //Tip: Use <br> to put the next text on a new line!
+ //Examples: 
+ //let nl = "<br>"; cout("I should be normal." + nl, null, "And I should be red! Also on a new line heh" + nl, "red", "And I is green. Why do I always get on the last line :(" ,"green")
+ //cout cout("I am purple!     ", "#913bdb", " (˶ᵔᗜᵔ˶)ﾉﾞ Hai I'm purple's friend, blue", "cyan")
+ //Code: 
+
+ function cout(...parts) {
+  let output = "";
+
+  for (let i = 0; i < parts.length; i += 2) {
+    let text = parts[i];
+    let color = parts[i + 1];
+    if (color) {
+      output += `<span style="color:${color};">${text}</span>`;
+    } else {
+      output += text;
+    }
+  }
+  // Append as plain text first
+  gwc.output.append(output);
+  // Force HTML rendering by replacing the whole thing with itself
+  gwc.output.replace(output, output);
+ }
+
+
+---append to comm window--<
+ Code:
  function comms(message){
  document.getElementById('communication').append(message)
  }
