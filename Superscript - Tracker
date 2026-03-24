@@ -329,6 +329,7 @@ else if(a(1, "all")){
   
 out("                 Adventuring", "#55e8ec")
 herbs()
+walks()
 mimprove()
   sep();
   
