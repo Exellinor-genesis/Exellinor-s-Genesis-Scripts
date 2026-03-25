@@ -798,9 +798,11 @@ else if(a(1, "restore")){
 }
 //RESET
 else if(a(1, "reset")){
+if(!args[2]){
   out("Are you sure you want to reset all tracked data? This wipes browser storage too! <trax reset confirm> to continue")
 }
-else if(args[1]=="reset" && args[2] == "confirm"){
+else if(args[2] == "confirm"){
+out("Userdata has been reset and browser data has been wiped")
       gwc.userdata.trax = {
       killz: { 
         today: 0, 
@@ -842,6 +844,7 @@ else if(args[1]=="reset" && args[2] == "confirm"){
    }
 };
 localStorage.removeItem("traxBackup");
+}
 }
 else if(a(1, "init")){
         if(!gwc.userdata.trax){
