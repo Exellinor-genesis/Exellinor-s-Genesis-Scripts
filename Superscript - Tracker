@@ -67,9 +67,7 @@ Main tracking trigger: Trax 1
 Regexp pattern:
 
 (^You (?:killed|defeated) the (?:.*))|^(You find (?:.*)[!])|(?:You (?:get|take) (.*) (copper|silver|gold|platinum) (?:coin|coins) from (?:.*) corpse)|(?:Total value: (?:(.*) platinum))|(?:You (?:take|get|pick) (?:.*) (unusual|peculiar|exotic) (?:.*) from (?:.*) corpse)|(?:^You are (just beginning on the path to|very far from|a long distance from|a fair distance from|just under halfway to|just over halfway to|getting closer to|fairly close to|very close to|on the verge of) (?:.*) (novice|greenhorne|beginner|apprentice|wanderer|adventurer|adept|great adventurer|veteran|expert|rising hero|hero|titan|champion|legend|myth)[.])|(^You finally recover)
-
 Execute Javascript:
-
 //Things for user to mess with
 var timezone = "America/Chicago" //timezone list is provided in the github!
 
@@ -252,13 +250,17 @@ function addCoin(type, amount) {
     gwc.output.append(text,color)
   }
 
----------------------------------------------------------------------
 
-Trigger 2 - Room tracking
 
-gmcp trigger: room.info
+
+============================================================================
+
+Tracking trigger 2: room movement
+
+gmcp pattern: room.info
 
 Execute Javascript:
+
 
 /* //remove the asterisk things if you use the board next ship trigger!
 if(gwc.userdata.boardingnext == "true"){
@@ -272,14 +274,11 @@ if(trax.walks.alltime){
 trax.walks.alltime += 1
 }
 
--------------------------------------------------------------------
+============================================================================
 
-Alias - trax
-
-Usage: <trax help> to see usage info
+Alias: Trax
 
 Execute Javascript:
-
 
 var triggername = "Trax tab" //name of the trigger for the trax tab
 
@@ -1253,14 +1252,15 @@ function ISN(value) {
   return num;
 }
 
---------------------------------------------------------------------------------------------
 
-Trigger - Trax tab
-This one is the script that adds a tab next to the comms window with all the data - does not work on mobile
+===================================================================
+
+Trigger 3: Trax tab
+*This only works on a computer, on mobile it doesn't show anything
 
 gmcp trigger: char.vitals
 
-Execute javascript:
+Execute Javascript:
 
 //====================
 // ADD TAB
@@ -1371,7 +1371,10 @@ if (us.herbAliasName && us.herbscriptonoff == "on") { //must drop in the gwc.use
     color(" (" + (us.roomCounter || 0) + "/" + path.length + ")", colors.success[1]);
 }
 
-
+let progress = ""
+progress = (nl + color("All time progs: ",colors.special[0]) + color(trax.progress.levels, colors.special[1]) + nl+
+            color("All time fantastics: ",colors.special[0]) + color(trax.progress.fantas, colors.special[1]) 
+            )
   //====================
   // COMBAT
   //====================
@@ -1486,6 +1489,7 @@ if (us.huntAliasName /*checks for hunt script's storage*/ && us.huntonoff == "on
 
     color("-- Activity --", colors.activity[0]) +
     walks +
+    progress +
     herbing +
     herbingt +
     herbinga +
