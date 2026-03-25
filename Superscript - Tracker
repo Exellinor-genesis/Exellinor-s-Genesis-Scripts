@@ -265,6 +265,8 @@ Execute Javascript:
 /* 
 //remove the asterisk things if you use the board next ship trigger!
 if(gwc.userdata.boardingnext == "true"){
+ gwc.userdata.boardingnext = "false"
+  gwc.trigger.disable("board ship auto")
 gwc.output.append("Ship boarding cancelled!" , "#9fc5e8");
 }
 */
