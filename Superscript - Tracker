@@ -262,10 +262,12 @@ gmcp pattern: room.info
 Execute Javascript:
 
 
-/* //remove the asterisk things if you use the board next ship trigger!
+/* 
+//remove the asterisk things if you use the board next ship trigger!
 if(gwc.userdata.boardingnext == "true"){
-gwc.output.append("Ship boarding cancelled!" , ""#9fc5e8");
-}*/
+gwc.output.append("Ship boarding cancelled!" , "#9fc5e8");
+}
+*/
 let trax = gwc.userdata.trax;
 if(!trax.walks.alltime){
 trax.walks.alltime = 1}
