@@ -90,6 +90,7 @@ if (!trax.currentdate || trax.currentdate === "unknown"||trax.currentdate == nul
 }
 //Reset daily
 if(recovered){
+trax.progress.current = progress
 out("Trax initialized")
   if(isNewDay()){
 out("It's a new day so daily storages have been flipped!")
