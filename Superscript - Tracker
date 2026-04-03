@@ -62,276 +62,25 @@ Common time zones (replace the var = "America/Chicago" with one of these)
 
 ####################################################################################################
 
-Main tracking trigger: Trax 1
-
-Regexp pattern:
-
-(^You (?:killed|defeated) the (?:.*))|^(You find (?:.*)[!])|(?:You (?:get|take) (.*) (copper|silver|gold|platinum) (?:coin|coins) from (?:.*) corpse)|(?:Total value: (?:(.*) platinum))|(?:You (?:take|get|pick) (?:.*) (unusual|peculiar|exotic) (?:.*) from (?:.*) corpse)|(?:^You are (just beginning on the path to|very far from|a long distance from|a fair distance from|just under halfway to|just over halfway to|getting closer to|fairly close to|very close to|on the verge of) (?:.*) (novice|greenhorne|beginner|apprentice|wanderer|adventurer|adept|great adventurer|veteran|expert|rising hero|hero|titan|champion|legend|myth)[.])|(You finally recover)|(^You eat (?:.*) (?:leaf|leaves|flowers|flower|rose|bud|mushroom|mushrooms|berry|berries|apple|fruit|fruits|moss|weed|weeds|riverweed|vine|lichen|alga|bean|root|carrot|bulb|potato|onion|bark|gras|grass|straw|trefoil|wreath|stalk|nut|fern|fungus|pumpkin|seeds|sap|stalk|frond)[.])|(^You feel ready to consume another herb)|(^You smash (?:.*) on your forehead|You feel the energy of the egg leaving you)(Ability used|Ability ready again)
-
-Execute Javascript:
-
-//Things for user to mess with
-const timezone = "America/Chicago" // longer timezone list is provided in the github! Common ones: America/New_York | America/Chicago | America/Los_Angeles | Europe/London | Europe/Paris | Asia/Tokyo | Asia/Kolkata | Australia/Sydney
-//declare args for easier reference - each set of parentheses is a different args, unless it has a ?: at the beginning
-let kills = a(1)
-let herbfound = a(2)
-let coinamount = a(3)
-let cointype = a(4)
-let bankvalue = a(5)
-let imbuetype = a(6)
-let rankl = a(7)
-let rankt = a(8)
-let recovered = args[9]
-let herbeaten = args[10]
-let herbready = args[11]
-let progress = gwc.gmcp.data.character.vitals.progress
-let strength = args[12]
-let ability = args[13]
-
-let trax = gwc.userdata.trax;
-
-//Example of ability ready script
-if(ability){
-  if(ability.includes("You cast example spell")){
-    trax.cancastexample = false
-  }
-  else if(strength.includes("You feel ready to cast example spell again")){
-    trax.cancastexample = true
-  out("Example spell is available again!")
-  }
-}
-//Then in the tab script put something like this:
-/*
-let examplestatus = ""
-if(trax.cancastexample === true){
-examplestatus = nl + color("You can cast example!", "lime")
-}
-if(trax.cancastexample === false){
-examplestatus = nl + color("You can't use example yet." , "crimson")
-}
-
-//In the output section(The one with all the lines like "progress + (newline) kills + (newline) etc."
-Things that come before +
-examplestatus + 
-things that come after
-*/
-//Ensure stored date
-if (!trax.currentdate || trax.currentdate === "unknown" || trax.currentdate == null) {
-  trax.currentdate = getDate();
-}
-//Reset when logging in
-if(recovered){
-  //Reset progress
-trax.progress.current = progress
-out("Trax initialized")
-  //Reset if new day
-  if(getDate()!= trax.currentdate){
-out("It's a new day so daily storages have been flipped!")
-trax.killz.today = 0
-trax.imbues.session = 0
-trax.herbs.today = 0
-trax.progress.today = 0
-trax.progress.current = gwc.gmcp.data.character.vitals.progress;
-trax.currentdate = getDate();
-  }
-}
-
-//Add to kills
-if(kills){
-trax.killz.alltime += 1
-trax.killz.today += 1
-}
-
-//Count herbs
-if(herbfound){
-trax.herbs.alltime += 1
-trax.herbs.today += 1
-}
-//Herb cooldown
-if(herbeaten){
-trax.caneatherb = false
-}
-if(herbready){
-trax.caneatherb = true 
-}
-
-//Count imbues
-if(imbuetype){
-if(imbuetype == "unusual"){trax.imbues.unusual +=1}
-if(imbuetype == "peculiar"){trax.imbues.peculiar +=1}
-if(imbuetype == "exotic"){trax.imbues.exotic +=1}
-trax.imbues.alltime += 1
-trax.imbues.session += 1
-}
-
-//Count coins and type
-if(coinamount && cointype){
-trax.coinloot.total += textToNumber(coinamount)
-addCoin(cointype, textToNumber(coinamount));
-}
-
-//Bank amount
-if(bankvalue){
-trax.bankacc = bankvalue
-}
-
-//Progress counter
-if(progress != "insignificant" && progress != "no measurable" && progress != trax.progress.current){
-  //up progs
-  trax.progress.levels += 1
-  trax.progress.today += 1
-  
-  gwc.output.append("New progress level reached!","lime")
-  //Fanta reset
-  if(progress == "fantastic"){
-   gwc.output.append("And you've reached fantastic progress! Resetting", "lime")
-   gwc.connection.send("stats reset")
-   trax.progress.fantas += 1
-  }
-  //Best date
-
-  if(trax.progress.bestday.amount < trax.progress.today){
-      const today = new Date().toLocaleDateString("en-CA", { 
-      timeZone: timezone, 
-      year: "numeric", 
-      month: "2-digit", 
-      day: "2-digit" 
-    });
-    trax.progress.bestday.date = today
-    trax.progress.bestday.amount = trax.progress.today
-  }
-  //Update progress
-trax.progress.current = progress
-}
-
-//Mortal improve tracker
-
-if(rankl && rankt){
-trax.nextlevel.rank = rankt
-    const progressMap = {
-    "just beginning on the path to": 5,
-    "very far from": 10,
-    "a long distance from": 20,
-    "a fair distance from": 30,
-    "just under halfway to": 45,
-    "just over halfway to": 55,
-    "getting closer to": 65,
-    "fairly close to": 75,
-    "very close to": 85,
-    "on the verge of": 95
-  };
-  
-  let ppercent = progressMap[rankl]
-  trax.nextlevel.percent = ppercent
-}
-
-// Strength spell tracker
-if(strength){
-  if(strength.includes("smash")){
-    trax.canstrength = false
-  }
-  else if(strength.includes("leaving")){
-    trax.canstrength = true
-  out("Strength spell is available again!")
-  }
-}
-//==================
-// FUNCTIONS
-//==================
-
-//simple args
-function a(num){return args[num];}
-
-//Get date
-function getDate() {
-    const today = new Date().toLocaleDateString("en-CA", { 
-      timeZone: timezone, 
-      year: "numeric", 
-      month: "2-digit", 
-      day: "2-digit" 
-    });
-return today
-  }
-
-//Easier coin adding
-function addCoin(type, amount) {
-  if(trax.coinloot[type] != null){
-    trax.coinloot[type] += amount;
-  }
-}
-
-//Convert number words to digits
-  function textToNumber(text) {
-    text = text.toLowerCase().trim();
-    if (text === "a" || text === "the") return 1;
-  
-    const ones = {
-      zero:0, one:1, two:2, three:3, four:4,
-      five:5, six:6, seven:7, eight:8, nine:9,
-      ten:10, eleven:11, twelve:12, thirteen:13,
-      fourteen:14, fifteen:15, sixteen:16,
-      seventeen:17, eighteen:18, nineteen:19
-    };
-  
-    const tens = {
-      twenty:20, thirty:30, forty:40,
-      fifty:50, sixty:60, seventy:70,
-      eighty:80, ninety:90
-    };
-  
-    let total = 0;
-    let words = text.split(/\s+/);
-    for (let w of words) {
-      if (ones[w] !== undefined) total += ones[w];
-      else if (tens[w] !== undefined) total += tens[w];
-    }
-    return total;
-  }
-//output function
-  function out(text, color = "#b440db"){
-    gwc.output.append(text,color)
-  }
-
-####################################################################################################
-
-Trigger 2 : Trax 2
-
-gmcp pattern: room.info
-
-Execute Javascript:
-
-if(gwc.userdata.boardingnext == "true"){
- gwc.userdata.boardingnext = "false"
-  gwc.trigger.disable("board ship auto")
-gwc.output.append("Ship boarding cancelled!" , "#9fc5e8");
-}
-let trax = gwc.userdata.trax;
-if(!trax.walks.alltime){
-trax.walks.alltime = 1}
-
-if(trax.walks.alltime){
-trax.walks.alltime += 1
-}
-
-#####################################################################################################
-
-Alias: Trax
+Alias: trax
 
 Execute Javascript:
 
 // ============================================
 // CONFIGURATION
 // ============================================
-const tabtrigger = "Trax tab";      //Name of tab trigger
 const maintracker = "Trax 1";       //Name of the trigger with long regex pattern
-const roomtracker = "Trax 2";       //Name of the trigger with "room.info" pattern
+const roomtracker = "Trax 2";       //Name of the tab trigger
 
 const timezone = "America/Chicago"; //Your timezone - list is in github
+const updatetime = 500              //Milliseconds between tab & window updating
 
 // Colors!!! Change to your liking or swap out with a preset below
 const defaultcolor = "#b440db";     // Default output color
-const helpcolor = "cyan";           // Color of help menu
+const helpcolor = "#1fcf82";        // Color of help menu
 const clickcolor = "#14a803"        // Color of clickable things
+const windowbgcolor = "#000314"     // Color of window background
+const windowbarcolor = "#020729"    // color of window dragger bit
 
 //Default
 const colors = {
@@ -343,83 +92,52 @@ const colors = {
   imbues: ["#78199e", "#af40db"],   //Purple colors
   prog: ["#2fb56e", "#65eba3"],     //Seagreen colors
 };
+
 /*
-
-//Pastel colors
-const colors = {
-  herbs: ["#9bc48e", "#c2e0b0"],     //Soft sage greens
-  sep: ["#8bb5e5", "#b8d4f0"],       //Powder blues
-  combat: ["#e8a4a4", "#f5c2c2"],    //Blush pinks
-  worldly: ["#f5e2b8", "#fff0cc"],   //Buttercream yellows
-  walk: ["#d4bc9a", "#ecd9b5"],      //Warm beiges
-  imbues: ["#cfb5e0", "#e8d5f0"],    //Lavender lilacs
-  prog: ["#add9c4", "#ccefe0"],      //Mint greens
-};
-
 //Kawaii colors
 const colors = {
-  herbs: ["#98fb98", "#7cfc00"],      // Fresh mint & lime green 🍀
-  sep: ["#87cefa", "#00bfff"],        // Sky blue & deep ocean blue 🌊
-  combat: ["#ffb6c1", "#ff69b4"],     // Bubblegum pink & hot pink 💕
-  worldly: ["#fff0b5", "#ffd966"],    // Creamy butter & honey gold 🌟
-  walk: ["#d2b48c", "#cd853f"],       // Toffee & caramel latte ☕
-  imbues: ["#e6c3ff", "#d291ff"],     // Lavender mist & grape soda 🍇
-  prog: ["#b0f0c0", "#6fdf9f"],       // Seafoam & jade shimmer ✨
+  herbs: ["#36e063", "#64f58b"],
+  sep: ["#f7adef", "#db6ecf"],
+  combat: ["#990539", "#c91a58"],
+  worldly: ["#d48c11", "#f0b043"], 
+  walk: ["#c64fdb", "#da6fed"],
+  imbues: ["#a30aab", "#e463eb"],
+  prog: ["#10c979", "#6ff2ba"],
 };
-
 //Bright colors
 const colors = {
-  herbs: ["#00ff9f", "#b0ffd0"],     //Mint & neon seafoam
-  sep: ["#0ff0fc", "#ff6ac4"],       //Cyan & hot pink
-  combat: ["#ff3366", "#ff80ab"],    //Neon pink & coral
-  worldly: ["#ffcc44", "#ffe68f"],   //Gold & neon yellow
-  walk: ["#cc66ff", "#e599ff"],      //Purple neon & lavender
-  imbues: ["#ff44cc", "#ff88e6"],    //Magenta & hot pink
-  prog: ["#44ffaa", "#88ffcc"],      //Turquoise & mint
+  herbs: ["#00ff9f", "#b0ffd0"],
+  sep: ["#0ff0fc", "#ff6ac4"],
+  combat: ["#ff3366", "#ff80ab"],
+  worldly: ["#ffcc44", "#ffe68f"],
+  walk: ["#cc66ff", "#e599ff"],
+  imbues: ["#ff44cc", "#ff88e6"],
+  prog: ["#44ffaa", "#88ffcc"],
 };
 
 //Dark colors
 const colors = {
-  herbs: ["#2d5a2a", "#4b8c44"],     //Deep forest greens
-  sep: ["#2c5282", "#3b82b6"],       //Midnight blues
-  combat: ["#7f1a1a", "#b91c1c"],    //Deep burgundy & crimson
-  worldly: ["#b7791f", "#d69e2e"],   //Bronze & amber
-  walk: ["#744210", "#9b6b43"],      //Chocolate & leather
-  imbues: ["#6b21a5", "#9333ea"],    //Deep purple & violet
-  prog: ["#2f6b47", "#3b9b6e"],      //Emerald & jade
+  herbs: ["#2d5a2a", "#4b8c44"],
+  sep: ["#2c5282", "#3b82b6"],
+  combat: ["#7f1a1a", "#b91c1c"],
+  worldly: ["#b7791f", "#d69e2e"],
+  walk: ["#744210", "#9b6b43"],
+  imbues: ["#6b21a5", "#9333ea"],
+  prog: ["#2f6b47", "#3b9b6e"],
 };
 
-//Monochrome
+
+//Pastel colors
 const colors = {
-  herbs: ["#5a6e5a", "#7d8f7d"],     //Olive gray & sage gray
-  sep: ["#4a5b6e", "#6c7e8f"],       //Steel blue-gray & slate
-  combat: ["#8b5a5a", "#ad7a7a"],    //Muted brick & dusty rose
-  worldly: ["#b59d6b", "#cdb48a"],   //Taupe & khaki
-  walk: ["#8b7355", "#a68b6e"],      //Mushroom & fawn
-  imbues: ["#7a6b8b", "#9b8cad"],    //Lavender gray & wisteria gray
-  prog: ["#6b8b7a", "#8cad9b"],      //Seafoam gray & sage
-};
-//Ocean
-const colors = {
-  herbs: ["#6e9f7e", "#8fc0a9"],     //Seaweed & coastal sage
-  sep: ["#2c7da0", "#61a5c2"],       //Deep ocean & sky blue
-  combat: ["#cd9771", "#e9b28e"],    //Coral reef & sand dollar
-  worldly: ["#e9c46a", "#f4d58c"],   //Seashell gold & beach sand
-  walk: ["#b28b5e", "#d4a373"],      //Driftwood & dune
-  imbues: ["#9c89b8", "#b8a9d4"],    //Twilight purple & wisteria
-  prog: ["#52b788", "#74c69d"],      //Seafoam & turquoise
+  herbs: ["#9bc48e", "#c2e0b0"],
+  sep: ["#8bb5e5", "#b8d4f0"],
+  combat: ["#e8a4a4", "#f5c2c2"],
+  worldly: ["#f5e2b8", "#fff0cc"],
+  walk: ["#d4bc9a", "#ecd9b5"],
+  imbues: ["#cfb5e0", "#e8d5f0"],
+  prog: ["#add9c4", "#ccefe0"],
 };
 
-//Earthy
-const colors = {
-  herbs: ["#6b8c5c", "#8fb06b"],     //Olive & moss
-  sep: ["#6c7a89", "#8a9ba8"],       //Stormy slate & mist
-  combat: ["#c75c3e", "#e07a5f"],    //Terracotta & clay
-  worldly: ["#e6b422", "#f4c542"],   //Goldenrod & marigold
-  walk: ["#9c6e4b", "#b9875a"],      //Saddle brown & caramel
-  imbues: ["#8b5a8c", "#b07dae"],    //Mauve & heather
-  prog: ["#5f8b6f", "#7da57a"],      //Juniper & sage
-};
 */
 
 // Valid commands
@@ -427,14 +145,20 @@ const validCommands = [
   "help", "all", "tab", "herbs", "walks", "kills",
   "imbues", "progress", "hunt", "coins", "bank",
   "check", "reset", "save", "restore", "init",
-  "progress", "prog", "newday", "add", "set", "delete"
+  "progress", "prog", "newday", "add", "set", "delete",
+  "options",
 ];
 
 // Data references
 let trax = gwc.userdata.trax;
 let us = gwc.userdata;
-
+let windowint = null;
+let tabint = null
+let statusWindowId = 'statusWindow';
+let currentFontSize = 14; // Default font size of window
+// =================
 // COMMAND HANDLER
+// =================
 
 // HELP
 if (a(1, "help")) {
@@ -443,8 +167,12 @@ if (a(1, "help")) {
     ezcol("                 ── Trax Help ──\n",colors.worldly[0]),
     ezcol("Tip: All these are clickable!\n   ▼\n", colors.worldly[0]),
     ezlink("trax help", "trax help"),    ezcol("    - show this help menu\n"),
-    ezlink("tab on", "trax tab on"),  ezcol("       - turn companion tab on\n"),
-    ezlink("tab off", "trax tab off"), ezcol("      - turn companion tab off"),
+    ezcol("  Tab/Window options:\n", colors.worldly[0]),
+    ezlink("window on","trax window on"), ezcol("    - turn the popup window on\n"),
+    ezlink("window off","trax window off"),ezcol("   - turn the popup window off\n"),
+    ezlink("tab on", "trax tab on"),  ezcol("       - turn tab on\n"),
+    ezlink("tab off", "trax tab off"), ezcol("      - turn tab off\n"),
+    ezlink("options", "trax options"), ezcol("      - toggle tab sections"),
     sep(),
     ezcol("  View Trackers:\n", colors.worldly[0]),
     ezlink("trax all", "trax all"),      ezcol("     - all trackers\n"),
@@ -479,15 +207,82 @@ else if (a(1, "tab")) {
   if (!args[2]) {
     out("Trax tab is currently " + trax.tabstatus);
   } else if (a(2, "on")) {
-    out("Trax tab enabled. Move or <v> to resummon it!");
-    gwc.trigger.enable(tabtrigger);
+    out("Trax tab enabled!");
     gwc.userdata.trax.tabstatus = "on";
+    addTab();                // Summon tab
+    populateCharacterTab();  // Initial populate
+       //Refresh every second
+   tabint = setInterval(function() {
+   populateCharacterTab()
+   },updatetime);//Milliseconds between refreshes
+
   } else if (a(2, "off")) {
     out("Trax tab has been disabled!");
-    gwc.trigger.disable(tabtrigger);
     gwc.userdata.trax.tabstatus = "off";
+    clearInterval(tabint)
     removeTab();
+    clearInterval(tabint)
   }
+}
+
+// TOGGLE WINDOW
+else if(a(1, "window")){
+  //Turn window on
+ if(a(2, "on")){
+    out("Trax window has been turned on! Move or <v> to summon it!")
+   //Appear the window
+   createStatusWindow()
+   populateStatusWindow()
+   
+   //Refresh every second
+   windowint = setInterval(function() {
+   populateStatusWindow()
+   },updatetime);//Milliseconds between refreshes
+ }
+  
+  //Turn window off
+ else if(a(2, "off")){
+    out("Trax window has been disabled!");
+    clearInterval(windowint)
+    $('#' + statusWindowId).remove();
+   clearInterval(windowint)
+ }
+  //Usage
+  else if(!args[2]){
+   click(ezcol("Usage: 'trax window "),ezlink("on", "trax window on"), ezcol(" | "), ezlink("off","trax window off"),ezcol("'"))
+   if($('#' + statusWindowId).length){out("Window is currently on")}
+   else{out("Window is currently off")}
+}
+}
+
+else if(a(1, "options")){
+  let options = trax.taboptions
+if(!args[2]){
+out(`====================================
+  --Things shown in tab & window--
+
+  Worldly:  ${options.worldly}
+  Activity: ${options.activity}
+  Combat:   ${options.combat}
+====================================
+`)
+}
+  else if(a(2, "worldly")){
+    if(a(3, "off")){options.worldly = false; out("Worldly section disabled in tab & window")}
+    if(a(3, "on")){options.worldly = true; out("Worldly section now showing in tab & window")}
+    if(!args[3]){out("Usage: trax options worldly on | off")}
+  }
+  else if(a(2, "activity")){
+    if(a(3, "off")){options.activity = false; out("Activity section disabled in tab & window")}
+    if(a(3, "on")){options.activity = true; out("Activity section now showing in tab & window")}
+    if(!args[3]){out("Usage: 'trax options activity on | off'")}
+  }
+    else if(a(2, "combat")){
+    if(a(3, "off")){options.combat = false; out("Combat section disabled in tab & window")}
+    if(a(3, "on")){options.combat = true; out("Combat section now showing in tab & window")}
+    if(!args[3]){out("Usage: 'trax options combat on | off'")}
+  }
+  else{out("Usage: trax options worldly|activity|combat on|off")}
 }
 
 // SHOW ALL
@@ -496,16 +291,16 @@ else if (a(1, "all")) {
   out("                 Adventuring", colors.walk[1]);
   herbs();
   walks();
-  sep();
+  sepb();
   out("                 Progress", colors.prog[1]);
   progress();
   mimprove();
-  sep();
+  sepb();
   out("                  Worldly", colors.worldly[1]);
   bank();
   coins();
   imbues();
-  sep();
+  sepb();
   out("                 Combat", colors.combat[1]);
   killz();
   hunting();
@@ -627,7 +422,7 @@ Valid options are listed below:
     
     if (ISN(subType)) {
       amount = ISN(subType);
-      trax.coinloot.alltime += amount;
+      trax.coinloot.total += amount;
       out("Added " + amount + " to alltime coins");
     } else if ((subType === "gold" || subType === "platinum" || subType === "silver" || subType === "copper") && ISN(args[4])) {
       amount = ISN(args[4]);
@@ -738,7 +533,7 @@ Valid options are listed below:
     
     if (ISN(subType)) {
       let amount = ISN(subType);
-      trax.coinloot.alltime = amount;
+      trax.coinloot.total = amount;
       out("Set alltime coins to " + amount);
     } else if ((subType === "copper" || subType === "silver" || subType === "gold" || subType === "platinum") && ISN(args[4])) {
       let amount = ISN(args[4]);
@@ -856,7 +651,8 @@ else if (a(1, "reset")) {
       },
       tabstatus: "",
       caneatherb: "",
-      canstrength: true
+      canstrength: true,
+      taboptions: {worldly: true, activity: true, combat:true}
     };
   }
 }
@@ -870,7 +666,8 @@ else if (a(1, "delete")) {
     delete gwc.userdata.trax
     localStorage.removeItem("lastSaved")
     localStorage.removeItem("traxBackup")
-    gwc.trigger.disable(tabtrigger)
+    gwc.connection.send("trax tab off", true)
+    gwc.connection.send("trax window off", true)
     gwc.trigger.disable(roomtracker)
     gwc.trigger.disable(maintracker)
   }
@@ -897,7 +694,9 @@ else if (a(1, "init")) {
       },
       tabstatus: "",
       caneatherb: "",
-      canstrength: true
+      canstrength: true,
+      taboptions: {worldly: true, activity: true, combat:true}
+
     };
     if (gwc.userdata.trax) {
       out("Data initialized!");
@@ -912,19 +711,22 @@ else if (a(1, "init")) {
 
 // NO STORAGE DETECTED
 else if (!trax) {
-  ezcol("No userdata detected! ", "red");
-  ezlink("Click to initialize", "trax init");
+  click(
+  ezcol("No userdata detected! ", "red"),
+  ezlink("Click to initialize", "trax init"),
+       )
 }
 
 // DEFAULT HELP
 else if (!args[1]) {
-  click(ezcol("Enter "), ezlink("'trax tab on'", "trax tab on"), ezcol(" to enable companion tab.\nFor help on all commands,"),ezlink(" click me", "trax help"));
+  click(ezlink("Click me", "trax help"),ezcol(" for command information"));
 }
 
 // INVALID COMMAND
 else if (args[1] && !validCommands.includes(args[1])) {
   click(ezcol("Unidentified syntax, "), ezlink("'trax help'", "trax help"), ezcol(" for usage information"))
 }
+else{out("You should never see this! Something bad happened")}
 // ============================================
 // SECTION DISPLAY FUNCTIONS
 // ============================================
@@ -1108,6 +910,20 @@ function sep() {
   return ezcol("\n─────────────────────────────────────────\n");
 }
 
+// Direct separator
+function sepb(color = colors.sep[1]) {
+  
+  let separator = `<span style="
+    display:block;
+    font-size:8px;
+    line-height:12px;
+    color:${color};
+    letter-spacing:0px;
+  ">────────────────────────────────────────────────────────────</span>`;
+  gwc.output.append("REPLACE ME")
+  gwc.output.replace("REPLACE ME", separator)
+}
+
 // Clickable text
 function click(...parts) {
   let output = "";
@@ -1222,18 +1038,6 @@ function checkTrax() {
     }
   }
 }
-
-####################################################################################################
-
-This is the trigger that displays a tab next to the communications window. It updates whenever genesis sends character health info, but you could put it in a setinterval loop if you want it to be more reliable. For how it is at base, <vitals> often works to refresh it. 
-Note: This bit only works on a computer, it doesn't show up at all on mobile
-
-Trigger: Trax tab
-
-gmcp pattern: char.vitals
-
-Execute Javascript:
-
 //====================
 // ADD TAB
 //====================
@@ -1271,168 +1075,486 @@ function toggleTab(e) {
   $(target).show();
   $tab.addClass('selected');
 }
-//==========================
-// EVERYTHING IN THE TAB
-//==========================
-function populateCharacterTab() {
+// ================
+// CREATE WINDOW
+// ================
+
+function createStatusWindow() {
+  // Remove existing window if any
+  if ($('#' + statusWindowId).length) {
+    $('#' + statusWindowId).remove();
+  }
+  
+  // Create window HTML
+  const windowHTML = `
+    <div id="${statusWindowId}" class=${statusWindowId} style="
+      position: fixed;
+      top: 10%;
+      left: 5%;
+      width: 90%;
+      max-width: 500px;
+      height: auto;
+      min-height: 300px;
+      max-height: 80vh;
+      background: ${windowbgcolor};
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #333;
+    ">
+      <div class="window-header" style="
+        padding: 12px;
+        background: ${windowbarcolor};
+        cursor: move;
+        border-bottom: 1px solid #333;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+      ">
+        <span style="color: #119c05; font-weight: bold;">[Status Tracker]</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="toggle-worldly" style="
+            background: ${windowbgcolor};
+            border: 1px solid #119c05;
+            color: #119c05;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">💲</button>
+          <button class="toggle-activity" style="
+            background: ${windowbgcolor};
+            border: 1px solid #119c05;
+            color: #119c05;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">⛰️</button>
+          <button class="toggle-combat" style="
+            background: ${windowbgcolor};
+            border: 1px solid #119c05;
+            color: #119c05;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">⚔️</button>
+          <button class="font-scaler-btn" data-scale="down" style="
+            background: ${windowbgcolor};
+            border: 1px solid #119c05;
+            color: #119c05;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">A-</button>
+          <button class="font-scaler-btn" data-scale="up" style="
+            background: ${windowbgcolor};
+            border: 1px solid #119c05;
+            color: #119c05;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">A+</button>
+          <button class="window-close" style="
+            background: ${windowbgcolor};
+            border: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">✕</button>
+        </div>
+      </div>
+      <div class="window-resize-handle" style="
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 20px;
+        height: 20px;
+        cursor: nw-resize;
+        background: linear-gradient(135deg, transparent 50%, #333 50%);
+        border-bottom-right-radius: 12px;
+      "></div>
+      <div class="window-content" style="
+        flex: 1;
+        overflow: auto;
+        padding: 16px;
+        font-size: 14px;
+        scrollbar-width: thin;
+      "></div>
+    </div>
+  `;
+  
+  $('body').append(windowHTML);
+  
+  const $window = $('#' + statusWindowId);
+  const $header = $window.find('.window-header');
+  const $content = $window.find('.window-content');
+  const $resizeHandle = $window.find('.window-resize-handle');
+  
+  // Make draggable
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+  let windowStart = { x: 0, y: 0 };
+  
+  $header.on('mousedown touchstart', function(e) {
+    // Don't start dragging if clicking on buttons
+    if ($(e.target).is('button') || $(e.target).closest('button').length) {
+      return;
+    }
+    isDragging = true;
+    const clientX = e.clientX || (e.originalEvent.touches ? e.originalEvent.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.originalEvent.touches ? e.originalEvent.touches[0].clientY : 0);
+    dragStart = { x: clientX, y: clientY };
+    windowStart = { x: $window.position().left, y: $window.position().top };
+    e.preventDefault();
+  });
+  
+  $(document).on('mousemove touchmove', function(e) {
+    if (!isDragging) return;
+    const clientX = e.clientX || (e.originalEvent.touches ? e.originalEvent.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.originalEvent.touches ? e.originalEvent.touches[0].clientY : 0);
+    const dx = clientX - dragStart.x;
+    const dy = clientY - dragStart.y;
+    let newLeft = windowStart.x + dx;
+    let newTop = windowStart.y + dy;
+    
+    // Constrain to viewport
+    newLeft = Math.max(0, Math.min(newLeft, $(window).width() - $window.outerWidth()));
+    newTop = Math.max(0, Math.min(newTop, $(window).height() - $window.outerHeight()));
+    
+    $window.css({ left: newLeft, top: newTop });
+    e.preventDefault();
+  });
+  
+  $(document).on('mouseup touchend', function() {
+    isDragging = false;
+  });
+  
+  // Make resizable
+  let isResizing = false;
+  let resizeStart = { x: 0, y: 0 };
+  let sizeStart = { w: 0, h: 0 };
+  
+  $resizeHandle.on('mousedown touchstart', function(e) {
+    isResizing = true;
+    const clientX = e.clientX || (e.originalEvent.touches ? e.originalEvent.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.originalEvent.touches ? e.originalEvent.touches[0].clientY : 0);
+    resizeStart = { x: clientX, y: clientY };
+    sizeStart = { w: $window.width(), h: $window.height() };
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  
+  $(document).on('mousemove touchmove', function(e) {
+    if (!isResizing) return;
+    const clientX = e.clientX || (e.originalEvent.touches ? e.originalEvent.touches[0].clientX : 0);
+    const clientY = e.clientY || (e.originalEvent.touches ? e.originalEvent.touches[0].clientY : 0);
+    const dw = clientX - resizeStart.x;
+    const dh = clientY - resizeStart.y;
+    let newWidth = sizeStart.w + dw;
+    let newHeight = sizeStart.h + dh;
+    
+    // Min/max constraints
+    newWidth = Math.max(300, Math.min(newWidth, $(window).width() - $window.position().left));
+    newHeight = Math.max(250, Math.min(newHeight, $(window).height() - $window.position().top));
+    
+    $window.css({ width: newWidth, height: newHeight });
+    e.preventDefault();
+  });
+  
+  $(document).on('mouseup touchend', function() {
+    isResizing = false;
+  });
+  
+  // Text scaling functionality
+  function scaleText(direction) {
+    if (direction === 'up' && currentFontSize < 30) {
+      currentFontSize += 2;
+    } else if (direction === 'down' && currentFontSize > 4) {
+      currentFontSize -= 2;
+    }
+    
+    // Apply new font size to content area
+    $content.css('font-size', currentFontSize + 'px');
+    
+    // Also scale the separator's font size proportionally
+    $content.find('span[style*="font-size:6px"]').css('font-size', Math.max(4, currentFontSize * 0.4) + 'px');
+  }
+  
+  // Attach font scaler buttons
+  $window.find('.font-scaler-btn').on('click', function() {
+    const direction = $(this).data('scale');
+    scaleText(direction);
+  });
+  
+  // Close button
+  $window.find('.window-close').on('click', function() {
+    clearInterval(windowint)
+    $window.remove();
+    clearInterval(windowint)
+  });
+  
+  
+  // Toggle worldly
+$window.find('.toggle-worldly').on('click', function() {
+  if(trax.taboptions.worldly == false){
+    gwc.connection.send("trax options worldly on", true)
+  }
+  else if(trax.taboptions.worldly == true){
+    gwc.connection.send("trax options worldly off", true)
+  }
+  else{
+    out("Error detected, woe!", "red")
+  }
+  updateToggleButton($(this), trax.taboptions.worldly);
+});
+  // Toggle combat
+$window.find('.toggle-combat').on('click', function() {
+  if(trax.taboptions.combat == false){
+    gwc.connection.send("trax options combat on", true)
+  }
+  else if(trax.taboptions.combat == true){
+    gwc.connection.send("trax options combat off", true)
+  }
+  else{
+    out("Error detected, woe!", "red")
+  }
+  updateToggleButton($(this), trax.taboptions.combat);
+});
+  // Toggle activity
+$window.find('.toggle-activity').on('click', function() {
+  if(trax.taboptions.activity == false){
+    gwc.connection.send("trax options activity on", true)
+  }
+  else if(trax.taboptions.activity == true){
+    gwc.connection.send("trax options activity off", true)
+  }
+  else{
+    out("Error detected, woe!", "red")
+  }
+  updateToggleButton($(this), trax.taboptions.activity);
+});
+updateToggleButton($window.find('.toggle-worldly'), trax.taboptions.worldly);
+updateToggleButton($window.find('.toggle-combat'), trax.taboptions.combat);
+updateToggleButton($window.find('.toggle-activity'), trax.taboptions.activity);
+  return $content;
+  
+  function updateToggleButton($btn, isOn) {
+  if (isOn) {
+    $btn.css({
+      border: "1px solid #119c05",
+      color: "#119c05"
+    });
+  } else {
+    $btn.css({
+      border: "1px solid #a01111",
+      color: "#a01111"
+    });
+  }
+}
+}
+
+// Helper functions
+function color(text, color) {
+  return `<span style="color:${color};">${text}</span>`;
+}
+
+function toWhole(num) {
+  return Math.trunc(num);
+}
+
+function makeBar(percent, length = 20, color = "#22c55e") {
+  percent = Math.max(0, Math.min(100, percent));
+  let filled = Math.round((percent / 100) * length);
+  let empty = length - filled;
+  let bar = "";
+  for (let i = 0; i < filled; i++) {
+    bar += `<span style="color:${color};">█</span>`;
+  }
+  for (let i = 0; i < empty; i++) {
+    bar += `<span style="color:#374151;">-</span>`;
+  }
+  return `[${bar}] ${percent}%`;
+}
+
+function separator(color = "#affc9f") {
+  return `<span style="
+    display:block;
+    font-size:6px;
+    line-height:8px;
+    color:${color};
+    letter-spacing:0px;
+  ">─────────────────────────────────────────────────────────</span>`;
+}
+
+//====================
+// SHARED CONTENT BUILDER
+//====================
+function buildTraxContent(showSections = null) {
 
   const data = gwc.gmcp.data.character;
   const name = data.status.name;
-  const $char = $('#character');
 
-  if (!$char.length) return;
+  let trax = gwc.userdata.trax || {};
+  let us = gwc.userdata;
 
-  $char.empty();
+  let nl = "<br>";
+  let sep = separator();
 
   function formatNumber(num) {
     if (num == null) return "0";
     return Number(num).toLocaleString();
   }
 
-  // BASICS
-  let sep = separator();
-  let nl = "<br>";
-  let trax = gwc.userdata.trax || {};
-  let us = gwc.userdata
-
-  // COLORS
-  const colors = {
-    header: "#119c05",
-    level: ["#1f7a0f", "#29c412"],
-    worldly: ["#ffbc03", "#eda509"],
-    activity: ["#02a9db", "#d27d2d"],
-    combat: ["#8f001a","#fc6a6a", "#de4328"],
-    info: ["#3d85c6", "#9fc5e8"],
-    success: ["#2d8a34", "#93c47d"],
-    special: ["#1b66f2", "#6fa8ff"],
-  };
-
   //====================
   // ACTIVITY
   //====================
 
-  //Boarding ship
-  let boarding = ""
-if(us.boardingnext && us.boardingnext == true){
-  boarding = nl + color("Boarding next ship!" , colors.info[0])
-}
-  //Rooms moved
+  let boarding = "";
+  if(us.boardingnext && us.boardingnext === "true"){
+    boarding = nl + color("Boarding next ship!" , colors.sep[0]);
+  }
+
   let walks = "";
   if (trax.walks) {
-    walks = nl + color("Rooms moved: ", colors.info[0]) +
-            color(formatNumber(trax.walks.alltime), colors.info[1]);
+    walks = nl + color("Rooms moved: ", colors.walk[0]) +
+            color(formatNumber(trax.walks.alltime), colors.walk[1]);
   }
-  //Show herbs found
+
   let herbingt = "";
   let herbinga = "";
   if(trax.herbs && trax.herbs.today != 0){
-    herbingt = nl + color("Herbs today: ", colors.success[0]) +
-              color(formatNumber(trax.herbs.today), colors.success[1]);
+    herbingt = nl + color("Herbs today: ", colors.herbs[0]) +
+               color(formatNumber(trax.herbs.today), colors.herbs[1]);
   }
-    if(trax.herbs && trax.herbs.alltime != 0){
-    herbinga = nl + color("Herbs All Time: ", colors.success[0]) +
-              color(formatNumber(trax.herbs.alltime), colors.success[1]);
+  if(trax.herbs && trax.herbs.alltime != 0){
+    herbinga = nl + color("Herbs All Time: ", colors.herbs[0]) +
+               color(formatNumber(trax.herbs.alltime), colors.herbs[1]);
   }
-  
-  //Show if you can eat an herb
-  let herbready = ""
-  if(trax.caneatherb == true){
-    herbready = nl + color("You can eat an herb", colors.success[1])
-  }
-  if(trax.caneatherb == false){
-    herbready = nl + color("You cannot eat an herb" , colors.combat[1])
-  }
-  
-//Herbing progress - to be used with Exosphere's Herb superscript
-let path = us.currentPath
-let herbing = ""
-if (us.herbAliasName && us.herbscriptonoff == "on") { //must drop in the gwc.userdata.herbscriptonoff == "on"/"off" into the herb script to work properly
 
-  let herbPercent = toWhole((us.roomCounter / path.length) * 100);
+  let herbready = "";
+  if(trax.caneatherb === true){
+    herbready = nl + color("You can eat an herb", colors.herbs[1]);
+  } else if(trax.caneatherb === false){
+    herbready = nl + color("You cannot eat an herb" , colors.combat[1]);
+  }
 
-  herbing =
-    nl + color("Herbing: ", colors.success[0]) +
-    color(makeBar(herbPercent, 16, colors.success[0]), colors.success[1]) +
-    color(" (" + (us.roomCounter || 0) + "/" + path.length + ")", colors.success[1]);
-}
+  let herbing = "";
+  let path = us.currentPath;
+  if (us.herbAliasName && us.herbscriptonoff == "on") {
+    let herbPercent = toWhole((us.roomCounter / path.length) * 100);
+    herbing =
+      nl + color("Herbing: ", colors.herbs[0]) +
+      color(makeBar(herbPercent, 16, colors.herbs[0]), colors.herbs[1]) +
+      color(` (${us.roomCounter || 0}/${path.length})`, colors.herbs[1]);
+  }
 
-let progress = ""
-let todayprog = ""
-if (trax.progress.today == 0){
-  todayprog = nl + color("No progress made today" , colors.special[0])
-}
-else if(trax.progress.today !=0){
-  todayprog = nl + color("Progress levels today: ", colors.special[0]) + color(trax.progress.today, colors.special[1])
-}
-let fantaeq = toWhole(gwc.userdata.trax.progress.levels / 18)
-progress = (nl + color("All time progs: ",colors.special[0]) + color(trax.progress.levels + " = " + fantaeq + " fantas", colors.special[1]) + nl+
-            color("All time fantastics: ",colors.special[0]) + color(trax.progress.fantas, colors.special[1]) +
-            todayprog
-            )
+  let todayprog = "";
+  if (trax.progress.today == 0){
+    todayprog = nl + color("No progress made today" , colors.prog[0]);
+  } else {
+    todayprog = nl + color("Progress levels today: ", colors.prog[0]) +
+                color(trax.progress.today, colors.prog[1]);
+  }
+
+  let fantaeq = toWhole(trax.progress.levels / 18);
+  let progress =
+    nl + color("All time progs: ",colors.prog[0]) +
+    color(trax.progress.levels + " = " + fantaeq + " fantas", colors.prog[1]) +
+    nl + color("All time fantastics: ",colors.prog[0]) +
+    color(trax.progress.fantas, colors.prog[1]) +
+    todayprog;
+
   //====================
   // COMBAT
   //====================
-  
-let tkills = "";
-let akills = "";
-let hunting = "";
-  
-if(us.huntonoff){
-  hunting = nl + color("Hunting is ", colors.combat[2])+
-  color(us.huntonoff, colors.combat[1])
-}
-  
-if (trax.killz && trax.killz.today) {
-  tkills = nl + color("Kills today: ", colors.combat[2]) +
-           color(formatNumber(trax.killz.today), colors.combat[1]);
-}
 
-if (trax.killz && trax.killz.alltime) {
-  akills = nl + color("Total kills: ", colors.combat[2]) +
-           color(formatNumber(trax.killz.alltime), colors.combat[1]);
-}
-  
-// HUNTING PROGRESS (Exosphere's script integration)
+  let hunting = "";
+  if(us.huntonoff){
+    hunting = nl + color("Hunting is ", colors.combat[0]) +
+              color(us.huntonoff, colors.combat[1]);
+  }
+
+  let tkills = "";
+  if (trax.killz && trax.killz.today) {
+    tkills = nl + color("Kills today: ", colors.combat[0]) +
+             color(formatNumber(trax.killz.today), colors.combat[1]);
+  }
+
+  let akills = "";
+  if (trax.killz && trax.killz.alltime) {
+    akills = nl + color("Total kills: ", colors.combat[0]) +
+             color(formatNumber(trax.killz.alltime), colors.combat[1]);
+  }
 
   let huntprog = "";
+  if (us.huntAliasName && us.huntonoff == "on") {
+    let percent = toWhole((us.roomCounter / us.currentPath.length) * 100);
+    let paused = us.huntpaused ? " (Paused)" : ` ${us.roomCounter}/${us.currentPath.length}`;
 
-if (us.huntAliasName /*checks for hunt script's storage*/ && us.huntonoff == "on") { //drop in a line of code to the huntint script where it gets enabled/disabled: gwc.userdata.huntonoff == "on" / "off"
-
-  let percent = toWhole((us.roomCounter / us.currentPath.length) * 100);
-  let paused = " " + us.roomCounter + "/" + us.currentPath.length;
-  if (us.huntpaused === true) {
-    paused = " (Paused)";
+    huntprog =
+      nl + color(
+        "Hunting " + us.currentScript + ": " +
+        color(makeBar(percent, 20, colors.combat[1]), colors.combat[0]) +
+        paused,
+        colors.combat[0]
+      );
   }
 
-  huntprog =
-    nl + color(
-      "Hunting " + (us.currentScript) + ": " +
-      color(makeBar(percent, 20, colors.combat[1]), colors.combat[2]) +
-      paused,
-      colors.combat[2]
-    );
-}
   //====================
-  // IMBUES
+  // WORLDLY
   //====================
 
-  let imbues = "";
-
+  let imbuesText = "";
   if (trax.imbues) {
     if (trax.imbues.alltime > 0) {
-      imbues += nl + color("All-time imbues: ", colors.worldly[1]) +
-                color(formatNumber(trax.imbues.alltime), colors.worldly[1]);
+      imbuesText += nl + color("All-time imbues: ", colors.imbues[1]) +
+                color(formatNumber(trax.imbues.alltime), colors.imbues[1]);
     }
-
     if (trax.imbues.session > 0) {
-      imbues += nl + color("Session imbues: ", colors.worldly[1]) +
-                color(formatNumber(trax.imbues.session), colors.worldly[1]);
+      imbuesText += nl + color("Session imbues: ", colors.imbues[1]) +
+                color(formatNumber(trax.imbues.session), colors.imbues[1]);
     }
   }
-
-  //====================
-  // COINS / BANK
-  //====================
 
   let coins = "";
   if (trax.coinloot) {
@@ -1448,7 +1570,7 @@ if (us.huntAliasName /*checks for hunt script's storage*/ && us.huntonoff == "on
   }
 
   //====================
-  // LEVEL PROGRESS
+  // LEVEL + ABILITIES
   //====================
 
   let levelProg = "";
@@ -1457,111 +1579,342 @@ if (us.huntAliasName /*checks for hunt script's storage*/ && us.huntonoff == "on
       color(
         "Progress to " + (trax.nextlevel.rank || "?") + ": " +
         makeBar(trax.nextlevel.percent || 0),
-        colors.level[1]
+        colors.prog[1]
       );
   }
-//===================
-// ABILITIES
-//===================
 
-  let strength = ""
+  let strength = "";
   if(trax.canstrength === false){
-   strength = nl + color("You cannot cast strength yet", colors.combat[1])
+    strength = nl + color("You cannot cast strength yet", colors.combat[1]);
+  } else if(trax.canstrength === true){
+    strength = nl + color("You can cast strength!" , colors.herbs[0]);
   }
-  else if(trax.canstrength === true){
-   strength = nl + color("You can cast strength!" , colors.success[0]) 
-  }
+
   //====================
-  // BUILD HTML
+  // SECTION BUILDING
   //====================
 
-  let html =
-    sep +
-    color(">---" + name + "---<", colors.header) + nl +
-
-    color("Level: " + (data.status.level || 0), colors.level[1]) + nl +
-    levelProg +
-
-    sep +
-
+  let WORLDLY =
     color("-- Worldly --", colors.worldly[0]) +
-    bank +
-    coins +
-    imbues +
+    bank + coins + imbuesText + sep;
 
-    sep +
+  let ACTIVITY =
+    color("-- Activity --", colors.sep[0]) +
+    walks + boarding + progress + herbready + herbing + herbingt + herbinga + sep;
 
-    color("-- Activity --", colors.activity[0]) +
-    walks +
-    boarding +
-    progress +
-    herbready +
-    herbing +
-    herbingt +
-    herbinga +
-      
-    sep +
-
+  let COMBAT =
     color("-- Combat --", colors.combat[0]) +
-    hunting +
-    huntprog +
-    strength +
-    akills +
-    tkills +
+    hunting + huntprog + strength + akills + tkills + sep;
 
-    sep;
+  // Apply tab filtering if provided
+  if (showSections) {
+    if (!showSections.worldly) WORLDLY = "";
+    if (!showSections.activity) ACTIVITY = "";
+    if (!showSections.combat) COMBAT = "";
+  }
 
-  $char.html(html);
+  //====================
+  // FINAL HTML
+  //====================
+
+  return (
+    sep +
+    color(">---" + name + "---<", colors.sep[1]) + nl +
+    color("Level: " + (data.status.level || 0), colors.sep[1]) + nl +
+    levelProg +
+    sep +
+    WORLDLY +
+    ACTIVITY +
+    COMBAT
+  );
 }
 
 //====================
-// APPEAR TAB
+// WINDOW
 //====================
-  addTab();
-  populateCharacterTab();
+function populateStatusWindow() {
+  if (!$('#' + statusWindowId).length) return;
 
+  let $content = $('#' + statusWindowId + ' .window-content');
+  if (!$content.length) {
+    $content = createStatusWindow();
+  }
 
-//====================
-// FUNCTIONS
-//====================
-
-//Easy html
-function color(text, color) {
-  return `<span style="color:${color};">${text}</span>`;
+  $content.html(buildTraxContent({
+    worldly: trax.taboptions.worldly,
+    activity: trax.taboptions.activity,
+    combat: trax.taboptions.combat
+  }));
+  $content.css('font-size', currentFontSize + 'px');
+  $content.find('span[style*="font-size:6px"]')
+    .css('font-size', Math.max(4, currentFontSize * 0.4) + 'px');
 }
 
-//Chop decimals
-function toWhole(num) {
-  return Math.trunc(num);
+
+//====================
+// TAB
+//====================
+function populateCharacterTab() {
+
+  const $char = $('#character');
+  if (!$char.length) return;
+
+  let trax = gwc.userdata.trax || {};
+
+  $char.html(buildTraxContent({
+    worldly: trax.taboptions.worldly,
+    activity: trax.taboptions.activity,
+    combat: trax.taboptions.combat
+  }));
 }
 
-//Percentage bar
-function makeBar(percent, length = 20, color = "#22c55e") {
-  percent = Math.max(0, Math.min(100, percent));
+################################################################################################
+################################################################################################
+################################################################################################
+
+Trigger: Trax 1
+(name is important!)
+
+regex pattern: 
+(^You (?:killed|defeated) the (?:.*))|^(You find (?:.*)[!])|(?:You (?:get|take) (.*) (copper|silver|gold|platinum) (?:coin|coins) from (?:.*) corpse)|(?:Total value: (?:(.*) platinum))|(?:You (?:take|get|pick) (?:.*) (unusual|peculiar|exotic) (?:.*) from (?:.*) corpse)|(?:^You are (just beginning on the path to|very far from|a long distance from|a fair distance from|just under halfway to|just over halfway to|getting closer to|fairly close to|very close to|on the verge of) (?:.*) (novice|greenhorne|beginner|apprentice|wanderer|adventurer|adept|great adventurer|veteran|expert|rising hero|hero|titan|champion|legend|myth)[.])|(You finally recover)|(^You eat (?:.*) (?:leaf|leaves|flowers|flower|rose|bud|mushroom|mushrooms|berry|berries|apple|fruit|fruits|moss|weed|weeds|riverweed|vine|lichen|alga|bean|root|carrot|bulb|potato|onion|bark|gras|grass|straw|trefoil|wreath|stalk|nut|fern|fungus|pumpkin|seeds|sap|stalk|frond)[.])|(^You feel ready to consume another herb)|(^You smash (?:.*) on your forehead|You feel the energy of the egg leaving you)(Ability used|Ability ready again)
+
+Execute javascript:
+
+//Things for user to mess with
+const timezone = "America/Chicago" // longer timezone list is provided in the github! Common ones: America/New_York | America/Chicago | America/Los_Angeles | Europe/London | Europe/Paris | Asia/Tokyo | Asia/Kolkata | Australia/Sydney
+//declare args for easier reference - each set of parentheses is a different args, unless it has a ?: at the beginning
+let kills = a(1)
+let herbfound = a(2)
+let coinamount = a(3)
+let cointype = a(4)
+let bankvalue = a(5)
+let imbuetype = a(6)
+let rankl = a(7)
+let rankt = a(8)
+let recovered = args[9]
+let herbeaten = args[10]
+let herbready = args[11]
+let progress = gwc.gmcp.data.character.vitals.progress
+let strength = args[12]
+let ability = args[13]
+
+let trax = gwc.userdata.trax;
+
+//Example of ability ready script
+if(ability){
+  if(ability.includes("You cast example spell")){
+    trax.cancastexample = false
+  }
+  else if(strength.includes("You feel ready to cast example spell again")){
+    trax.cancastexample = true
+  out("Example spell is available again!")
+  }
+}
+//Then in the tab script put something like this:
+/*
+let examplestatus = ""
+if(trax.cancastexample === true){
+examplestatus = nl + color("You can cast example!", "lime")
+}
+if(trax.cancastexample === false){
+examplestatus = nl + color("You can't use example yet." , "crimson")
+}
+
+//In the output section(The one with all the lines like "progress + (newline) kills + (newline) etc."
+Things that come before +
+examplestatus + 
+things that come after
+*/
+//Ensure stored date
+if (!trax.currentdate || trax.currentdate === "unknown" || trax.currentdate == null) {
+  trax.currentdate = getDate();
+}
+//Reset when logging in
+if(recovered){
+  //Reset progress
+trax.progress.current = progress
+out("Trax is up and running")
+  //Reset if new day
+  if(getDate()!= trax.currentdate){
+out("It's a new day so daily storages have been flipped!")
+trax.killz.today = 0
+trax.imbues.session = 0
+trax.herbs.today = 0
+trax.progress.today = 0
+trax.progress.current = gwc.gmcp.data.character.vitals.progress;
+trax.currentdate = getDate();
+  }
+}
+
+//Add to kills
+if(kills){
+trax.killz.alltime += 1
+trax.killz.today += 1
+}
+
+//Count herbs
+if(herbfound){
+trax.herbs.alltime += 1
+trax.herbs.today += 1
+}
+//Herb cooldown
+if(herbeaten){
+trax.caneatherb = false
+}
+if(herbready){
+trax.caneatherb = true 
+}
+
+//Count imbues
+if(imbuetype){
+if(imbuetype == "unusual"){trax.imbues.unusual +=1}
+if(imbuetype == "peculiar"){trax.imbues.peculiar +=1}
+if(imbuetype == "exotic"){trax.imbues.exotic +=1}
+trax.imbues.alltime += 1
+trax.imbues.session += 1
+}
+
+//Count coins and type
+if(coinamount && cointype){
+trax.coinloot.total += textToNumber(coinamount)
+addCoin(cointype, textToNumber(coinamount));
+}
+
+//Bank amount
+if(bankvalue){
+trax.bankacc = bankvalue
+}
+
+//Progress counter
+if(progress != "insignificant" && progress != "no measurable" && progress != trax.progress.current){
+  //up progs
+  trax.progress.levels += 1
+  trax.progress.today += 1
   
-  let filled = Math.round((percent / 100) * length);
-  let empty = length - filled;
-
-  let bar = "";
-
-  for (let i = 0; i < filled; i++) {
-    bar += `<span style="color:${color};">█</span>`;
+  gwc.output.append("New progress level reached!","lime")
+  //Fanta reset
+  if(progress == "fantastic"){
+   gwc.output.append("And you've reached fantastic progress! Resetting", "lime")
+   gwc.connection.send("stats reset")
+   trax.progress.fantas += 1
   }
-  for (let i = 0; i < empty; i++) {
-    bar += `<span style="color:#374151;">-</span>`;
-  }
+  //Best date
 
-  return `[${bar}] ${percent}%`;
+  if(trax.progress.bestday.amount < trax.progress.today){
+      const today = new Date().toLocaleDateString("en-CA", { 
+      timeZone: timezone, 
+      year: "numeric", 
+      month: "2-digit", 
+      day: "2-digit" 
+    });
+    trax.progress.bestday.date = today
+    trax.progress.bestday.amount = trax.progress.today
+  }
+  //Update progress
+trax.progress.current = progress
 }
 
-//Section separator
-function separator(color = "#affc9f") {
-  return `<span style="
-    display:block;
-    font-size:6px;
-    line-height:8px;
-    color:${color};
-    letter-spacing:0px;
-  ">─────────────────────────────────────</span>`;
+//Mortal improve tracker
+
+if(rankl && rankt){
+trax.nextlevel.rank = rankt
+    const progressMap = {
+    "just beginning on the path to": 5,
+    "very far from": 10,
+    "a long distance from": 20,
+    "a fair distance from": 30,
+    "just under halfway to": 45,
+    "just over halfway to": 55,
+    "getting closer to": 65,
+    "fairly close to": 75,
+    "very close to": 85,
+    "on the verge of": 95
+  };
+  
+  let ppercent = progressMap[rankl]
+  trax.nextlevel.percent = ppercent
 }
 
+// Strength spell tracker
+if(strength){
+  if(strength.includes("smash")){
+    trax.canstrength = false
+  }
+  else if(strength.includes("leaving")){
+    trax.canstrength = true
+  out("Strength spell is available again!")
+  }
+}
+//==================
+// FUNCTIONS
+//==================
+
+//simple args
+function a(num){return args[num];}
+
+//Get date
+function getDate() {
+    const today = new Date().toLocaleDateString("en-CA", { 
+      timeZone: timezone, 
+      year: "numeric", 
+      month: "2-digit", 
+      day: "2-digit" 
+    });
+return today
+  }
+
+//Easier coin adding
+function addCoin(type, amount) {
+  if(trax.coinloot[type] != null){
+    trax.coinloot[type] += amount;
+  }
+}
+
+//Convert number words to digits
+  function textToNumber(text) {
+    text = text.toLowerCase().trim();
+    if (text === "a" || text === "the") return 1;
+  
+    const ones = {
+      zero:0, one:1, two:2, three:3, four:4,
+      five:5, six:6, seven:7, eight:8, nine:9,
+      ten:10, eleven:11, twelve:12, thirteen:13,
+      fourteen:14, fifteen:15, sixteen:16,
+      seventeen:17, eighteen:18, nineteen:19
+    };
+  
+    const tens = {
+      twenty:20, thirty:30, forty:40,
+      fifty:50, sixty:60, seventy:70,
+      eighty:80, ninety:90
+    };
+  
+    let total = 0;
+    let words = text.split(/\s+/);
+    for (let w of words) {
+      if (ones[w] !== undefined) total += ones[w];
+      else if (tens[w] !== undefined) total += tens[w];
+    }
+    return total;
+  }
+//output function
+  function out(text, color = "#b440db"){
+    gwc.output.append(text,color)
+  }
+
+################################################################################################
+################################################################################################
+################################################################################################
+
+Trigger: Trax 2
+(Name is important)
+
+gmcp pattern: room.info
+
+let trax = gwc.userdata.trax;
+if(!trax.walks.alltime){
+trax.walks.alltime = 1}
+
+if(trax.walks.alltime){
+trax.walks.alltime += 1
+}
