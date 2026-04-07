@@ -1,0 +1,176 @@
+Description: This code lets you set delayed notifications for your future self! You can make them say whatever you want, 
+             such as reminding yourself to sharpen weapons or check your auction listings or anything else! 
+             Note: Notifications will loop every minute until you clear them! The time between loops is easily configurable
+
+Contains: 1 trigger & 1 alias
+
+Usage information:
+
+  Tip - # means a number!
+
+  Valid commands: help | add | check | clear
+
+  Usage:
+
+  add (#m or #h) Message  - set a notification. 
+  Note: m and h stand for minutes and hours
+  Examples:
+   notify add 1h Refill on suranie
+   notify add 10m Sharpen your sword!
+
+  check - See all notifications you have
+
+  clear #  - clear a notification
+
+  help - show help menu
+
+---------------------------------------------------------------------------------------------
+
+Trigger: notifications
+
+gmcp trigger: char.vitals
+
+Execute Javascript:
+
+let notifRepeat = 60 //Time between notifications(until acknowledged)
+// Current time
+let now = Date.now();
+
+// Loop over all stored reminders
+for (let key in gwc.userdata) {
+  if (key.startsWith("notify_")) {
+    let n = gwc.userdata[key];
+    
+    // Check if time has come
+    if (now >= n.triggerTime) {
+      // Alert the player
+      gwc.output.append(`[REMINDER]: ${n.message} (ID #${key.split("_")[1]})`, "red");
+      n.triggered = true
+      n.triggerTime += notifRepeat*1000; 
+    }
+  }
+}
+---------------------------------------------------------------------------------------------
+
+Alias: notify
+
+Execute Javascript:
+
+/* Notifications alias - make the game notify you about something after a certain amount of time!
+ usage examples: <notify add 18h Check your auction house bids!>
+                 <notify add 10m Sharpen weapons>
+                 <notify check>
+                 <notify clear 2>
+                 <notify help>
+*/
+let defaultcolor = "skyblue" //Color of output text
+
+// Initialize counter if not set(For numbering notifications)
+if (!gwc.userdata.notifyCounter){gwc.userdata.notifyCounter = 1}
+
+let cmd = args[1];
+
+const validCommands = [
+  "add", "check", "clear", "help"
+]
+
+// If no command
+if (!cmd) {
+  hout("Usage: notify help|add|check|clear");
+}
+// Invalid syntax
+else if (cmd && !validCommands.includes(cmd)) {
+  hout("Invalid syntax. Try 'notify help'")
+}
+//Help screen
+else if(cmd === "help"){
+  hout(`╔════════════════════《✧》════════════════════╗
+           Notification system help
+  Tip - # means a number!
+
+  Valid commands: help | add | check | clear
+
+  Usage:
+
+  add (#m or #h) Message  - set a notification. 
+  Note: m and h stand for minutes and hours
+  Examples:
+   notify add 1h Refill on suranie
+   notify add 10m Sharpen your sword!
+
+  check - See all notifications you have
+
+  clear #  - clear a notification
+
+  help - show this help menu
+╚════════════════════《✧》════════════════════╝`)
+}
+// Add reminder
+else if (cmd === "add") {
+  let timeStr = args[2];
+  let message = args['*'].split(' ').slice(2).join(' ');
+
+  if (!timeStr || !message) {
+    hout("Usage example: <notify add 18h Message>");
+  } else {
+    let match = timeStr.match(/(\d+)([hm])/i);
+    if (!match) {
+      hout("Time format invalid. Use #h or #m, e.g. 10m, 20h");
+    } else {
+      let num = parseInt(match[1]);
+      let unit = match[2].toLowerCase();
+      let ms = unit === "h" ? num * 3600 * 1000 : num * 60 * 1000;
+
+      // Save reminder using simple keys
+      let id = gwc.userdata.notifyCounter++;
+      gwc.userdata["notify_" + id] = {
+        message,
+        triggerTime: Date.now() + ms,
+        triggered: false
+      };
+
+      hout(`Reminder added (#${id}): "${message}" in ${timeStr}`);
+    }
+  }
+}
+
+// Check reminders
+else if (cmd === "check") {
+  let lines = [];
+  for (let key in gwc.userdata) {
+    if (key.startsWith("notify_")) {
+      let n = gwc.userdata[key];
+      let status = n.triggered ? "ACTIVE" : "PENDING";
+      let timeStr = new Date(n.triggerTime).toLocaleTimeString();
+      lines.push(`#${key.split("_")[1]}: [${status}] "${n.message}" (set for ${timeStr})`);
+    }
+  }
+  if (lines.length === 0) hout("No reminders set.");
+  else hout(lines.join("<br>"));
+}
+
+// Clear reminder
+else if (cmd === "clear") {
+  let id = args[2];
+  if (!id) {
+    hout("Usage: <notify clear #>");
+  }
+  else if (!gwc.userdata["notify_" + id]) {
+    hout(`No reminder found with ID ${id}`);
+  } 
+  else {
+    delete gwc.userdata["notify_" + id];
+    hout(`Reminder #${id} cleared.`)
+    gwc.userdata.notifyCounter -= 1;
+  }
+}
+
+//Functions
+function hout(text){
+  let placeholder = "___REPLACE_ME___";
+  gwc.output.append(placeholder);
+  gwc.output.replace(placeholder, color(text));
+}
+function color(text, color = defaultcolor) {
+  return `<span style="color:${color};">${text}</span>`;
+}
